@@ -154,11 +154,39 @@ def historical_high(ticker):
         except Exception as error: last=error
     raise last
 
+def previous_day_change(ticker,price_as_of):
+    from html import unescape
+    from zoneinfo import ZoneInfo
+    market_date=dt.datetime.fromisoformat(price_as_of).astimezone(ZoneInfo('Asia/Singapore' if ticker.endswith('.SI') else 'America/New_York')).date()
+    end=int(dt.datetime.now(dt.timezone.utc).timestamp())
+    hosts=('sg.finance.yahoo.com','finance.yahoo.com','uk.finance.yahoo.com') if ticker.endswith('.SI') else ('finance.yahoo.com','sg.finance.yahoo.com')
+    for host in hosts:
+        try:
+            text=fetch('https://'+host+'/quote/'+urllib.parse.quote(ticker)+'/history/?period1='+str(end-60*86400)+'&period2='+str(end))
+            rows=[]
+            for tr in re.findall(r'<tr\b[^>]*>(.*?)</tr>',text,re.S):
+                cells=[unescape(re.sub(r'<[^>]+>','',v)).strip() for v in re.findall(r'<td\b[^>]*>(.*?)</td>',tr,re.S)]
+                if len(cells)!=7: continue
+                try:
+                    date=dt.datetime.strptime(cells[0],'%b %d, %Y').date()
+                    close=float(cells[4].replace(',',''))
+                    if date<market_date and finite(close) and close>0: rows.append((date,close))
+                except ValueError: continue
+            rows=sorted(dict(rows).items(),reverse=True)
+            if len(rows)<2: raise ValueError('Two completed previous trading-day closes unavailable')
+            return {'prev_day_pct_change':percentage(rows[0][1],rows[1][1]),'prev_day_change_as_of':rows[0][0].isoformat(),'prev_day_change_retrieved_at':now(),'prev_day_change_error':None}
+        except Exception as error: last=error
+    raise last
+
 def retrieve(x,old,history=False):
     result={**old,**x}
     try:
         result.update(quote(x['ticker']))
         result['refresh_error']=None
+        try: result.update(previous_day_change(x['ticker'],result['price_as_of']))
+        except Exception as error:
+            result['prev_day_pct_change']=None
+            result['prev_day_change_error']='Previous trading-day change unavailable: '+str(error)
         # Price-only runs preserve historical data and its original timestamp.
         if finite(result.get('ath')):
             if result['current_price']>result['ath']:
