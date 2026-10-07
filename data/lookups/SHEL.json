@@ -1,0 +1,11 @@
+{
+  "request_id": "3c7163ee-bde4-4b09-a09a-7f714a84e9bf",
+  "generated_at": "2026-10-07T12:29:29.243656Z",
+  "instrument": {
+    "ticker": "SHEL",
+    "name": "Shell plc",
+    "region": "NYSE",
+    "type": "Stock",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
