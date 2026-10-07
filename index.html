@@ -413,7 +413,7 @@ a[href]:focus-visible,.btn:focus-visible,button:focus-visible{outline:3px solid 
 <section id="request" class="wrap">
  <div class="request-wrap">
   <div class="request-copy"><p class="eyebrow">Tell me what would help</p><h2>Request a Tool</h2><p>Have an idea for a learning game or need help turning your prescribed exercise routine into an easy-to-follow digital guide? Tell me what you need.</p><p class="help">Only information needed to understand and reply to your request is requested. Please avoid including medical records or other sensitive information unless genuinely necessary.</p></div>
-  <form id="requestForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST" enctype="multipart/form-data" novalidate>
+  <form id="requestForm" action="https://formspree.io/f/mgaoaerd" method="POST" enctype="multipart/form-data" novalidate>
    <input type="hidden" name="_subject" value="New Digital Tool Request">
    <fieldset><legend>Your Details</legend>
     <div class="field"><label for="name">Name *</label><input id="name" name="name" autocomplete="name" required></div>
@@ -444,7 +444,7 @@ a[href]:focus-visible,.btn:focus-visible,button:focus-visible{outline:3px solid 
 <section id="about" class="band">
  <div class="wrap about-grid">
   <article class="about-card"><p class="eyebrow">About the project</p><h2>Useful technology, made easier to use.</h2><p>This independent collection brings together practical digital tools for learning, daily living, active ageing, accessibility and established exercise routines. The aim is simple: make useful digital experiences clearer and more approachable for different generations.</p><p>New categories can be added over time, including caregiver tools, accessibility tools, health-information tools, community resources and additional educational games.</p></article>
-  <aside class="privacy-card"><p class="eyebrow">Safety &amp; privacy</p><h2>Minimal data by design</h2><p>No account is required to browse this portal. The request form asks only for information needed to understand and respond to a request.</p><p>Form submissions are sent through the configured form-processing service. That service processes the submitted information so the website owner can reply. External tools have their own privacy practices.</p><p>Exercise content is informational support for following established instructions, not medical diagnosis, treatment or personalised medical advice.</p></aside>
+  <aside class="privacy-card"><p class="eyebrow">Safety &amp; privacy</p><h2>Minimal data by design</h2><p>No account is required to browse this portal. The request form asks only for information needed to understand and respond to a request.</p><p>When connected, the request form sends your details through Formspree so the website owner can reply. External tools have their own privacy practices.</p><p>Exercise content is informational support for following established instructions, not medical diagnosis, treatment or personalised medical advice.</p></aside>
  </div>
 </section>
 </main>
@@ -466,7 +466,7 @@ form.addEventListener('submit',async(e)=>{
   if(!form.checkValidity()){form.reportValidity();return}
   const action=form.getAttribute('action');
   if(action.includes('YOUR_FORM_ID')){
-    statusBox.textContent='Local test mode: the form is ready, but delivery is not yet connected. Add your Formspree form ID before publishing.';
+    statusBox.textContent='Email delivery is not connected yet. Your request has not been sent.';
     statusBox.classList.add('error');statusBox.hidden=false;return;
   }
   const button=form.querySelector('button[type="submit"]');button.disabled=true;button.textContent='Sending…';
