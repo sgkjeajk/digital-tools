@@ -8,8 +8,8 @@ on:
       - scripts/github_market_update.py
       - .github/workflows/stock-monitor.yml
   schedule:
-    # Every 15 minutes; GitHub may delay scheduled runs.
-    - cron: '9,24,39,54 * * * *'
+    # Attempt every five minutes; scrape only when saved prices are 15 minutes old.
+    - cron: '2-57/5 * * * *'
     # Full historical highs: 08:00, 14:00 and 20:00 SGT.
     - cron: '0 0,6,12 * * *'
   workflow_dispatch:
@@ -41,6 +41,7 @@ jobs:
           python-version: '3.12'
       - name: Retrieve verified market data or metadata
         env:
+          TRIGGER_EVENT: ${{ github.event_name }}
           LOOKUP_TICKER: ${{ inputs.lookupTicker }}
           REQUEST_ID: ${{ inputs.requestId }}
           REFRESH_ATH: ${{ github.event_name != 'schedule' || github.event.schedule == '0 0,6,12 * * *' }}
