@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-07T12:29:49.101712Z",
+  "generated_at": "2026-10-07T12:59:05.841463Z",
   "ath_since": "2000-01-01",
   "config_revision": 7,
   "instruments": [
@@ -18,10 +18,10 @@
       "currency": "SGD",
       "price_as_of": "2026-10-07T09:15:28+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:47.926205Z",
+      "price_retrieved_at": "2026-10-07T12:58:53.076567Z",
       "ath": 5.920000076293945,
       "ath_retrieved_at": "2026-10-07T07:08:46.423448Z",
-      "ath_error": null,
+      "ath_error": "Historical scrape failed; saved ATH and timestamp retained. HTTP Error 404: Not Found",
       "drawdown_pct": -3.716217457072568
     },
     {
@@ -39,11 +39,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:00+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:47.946499Z",
-      "ath": 762.8599853515625,
-      "ath_retrieved_at": "2026-10-07T07:08:46.481445Z",
+      "price_retrieved_at": "2026-10-07T12:58:53.147253Z",
+      "ath": 762.86,
+      "ath_retrieved_at": "2026-10-07T12:58:55.139371Z",
       "ath_error": null,
-      "drawdown_pct": -0.41947217222145783
+      "drawdown_pct": -0.4194740843667333,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2000-01-03",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 6730
     },
     {
       "region": "United States",
@@ -60,11 +64,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:01+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:47.936252Z",
-      "ath": 314.114990234375,
-      "ath_retrieved_at": "2026-10-07T07:08:46.360078Z",
+      "price_retrieved_at": "2026-10-07T12:58:53.168953Z",
+      "ath": 314.11,
+      "ath_retrieved_at": "2026-10-07T12:58:53.868081Z",
       "ath_error": null,
-      "drawdown_pct": -0.43136758082255033
+      "drawdown_pct": -0.4297857438476993,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2020-10-13",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 1502
     },
     {
       "region": "United States",
@@ -81,11 +89,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:00+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:47.981736Z",
-      "ath": 781.6199951171875,
-      "ath_retrieved_at": "2026-10-07T07:08:46.647362Z",
+      "price_retrieved_at": "2026-10-07T12:58:53.227810Z",
+      "ath": 781.62,
+      "ath_retrieved_at": "2026-10-07T12:58:56.032229Z",
       "ath_error": null,
-      "drawdown_pct": -0.3236860792958818
+      "drawdown_pct": -0.32368670197794325,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2000-01-03",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 6730
     },
     {
       "region": "United States",
@@ -102,11 +114,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:00+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.205060Z",
-      "ath": 211.94000244140625,
-      "ath_retrieved_at": "2026-10-07T07:08:46.927623Z",
+      "price_retrieved_at": "2026-10-07T12:58:54.500130Z",
+      "ath": 211.94,
+      "ath_retrieved_at": "2026-10-07T12:58:56.268514Z",
       "ath_error": null,
-      "drawdown_pct": -1.0427490874532985
+      "drawdown_pct": -1.0427479475323187,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2012-01-12",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 3704
     },
     {
       "region": "United States",
@@ -123,11 +139,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:00+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.237344Z",
-      "ath": 718.469970703125,
-      "ath_retrieved_at": "2026-10-07T07:08:47.354135Z",
+      "price_retrieved_at": "2026-10-07T12:58:55.239559Z",
+      "ath": 718.47,
+      "ath_retrieved_at": "2026-10-07T12:58:56.888145Z",
       "ath_error": null,
-      "drawdown_pct": -0.31594510497126027
+      "drawdown_pct": -0.3159491697635186,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2010-09-09",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 4043
     },
     {
       "ticker": "VTI",
@@ -141,11 +161,17 @@
       "current_pct_change": 0.5097214923804438,
       "price_as_of": "2026-10-06T20:00:00+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.287206Z",
+      "price_retrieved_at": "2026-10-07T12:58:56.297390Z",
       "currency": "USD",
       "refresh_error": null,
-      "drawdown_pct": null,
-      "ath_error": "No saved ATH available; historical retrieval is disabled."
+      "drawdown_pct": -0.6699210635645936,
+      "ath_error": null,
+      "ath": 385.12,
+      "ath_retrieved_at": "2026-10-07T12:58:58.793453Z",
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2001-06-15",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 6364
     },
     {
       "ticker": "VUG",
@@ -159,11 +185,17 @@
       "current_pct_change": 0.6300238974581873,
       "price_as_of": "2026-10-06T20:00:00+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.312202Z",
+      "price_retrieved_at": "2026-10-07T12:58:56.346153Z",
       "currency": "USD",
       "refresh_error": null,
-      "drawdown_pct": null,
-      "ath_error": "No saved ATH available; historical retrieval is disabled."
+      "drawdown_pct": -0.3870967741935516,
+      "ath_error": null,
+      "ath": 93.0,
+      "ath_retrieved_at": "2026-10-07T12:58:58.028935Z",
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2004-01-30",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 5707
     },
     {
       "region": "United States",
@@ -180,11 +212,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:01+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.452739Z",
-      "ath": 345.3399963378906,
-      "ath_retrieved_at": "2026-10-07T07:08:47.117591Z",
+      "price_retrieved_at": "2026-10-07T12:58:56.900811Z",
+      "ath": 345.34,
+      "ath_retrieved_at": "2026-10-07T12:58:59.373398Z",
       "ath_error": null,
-      "drawdown_pct": -3.390860155808084
+      "drawdown_pct": -3.3908611802860866,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2000-01-03",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 6730
     },
     {
       "region": "United States",
@@ -201,11 +237,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:01+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.541730Z",
-      "ath": 287.20001220703125,
-      "ath_retrieved_at": "2026-10-07T07:08:47.056407Z",
+      "price_retrieved_at": "2026-10-07T12:58:57.094485Z",
+      "ath": 287.2,
+      "ath_retrieved_at": "2026-10-07T12:59:00.015113Z",
       "ath_error": null,
-      "drawdown_pct": -10.762538611854033
+      "drawdown_pct": -10.762534818941493,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2000-01-03",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 6730
     },
     {
       "ticker": "D05.SI",
@@ -219,11 +259,17 @@
       "current_pct_change": -1.3620162932790336,
       "price_as_of": "2026-10-07T09:15:37+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.568551Z",
+      "price_retrieved_at": "2026-10-07T12:58:59.390685Z",
       "currency": "SGD",
       "refresh_error": null,
-      "drawdown_pct": null,
-      "ath_error": "No saved ATH available; historical retrieval is disabled."
+      "drawdown_pct": -1.973434535104368,
+      "ath_error": null,
+      "ath": 79.05,
+      "ath_retrieved_at": "2026-10-07T12:59:03.260615Z",
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2000-01-03",
+      "ath_history_end": "2026-10-07",
+      "ath_history_rows": 6777
     },
     {
       "region": "United States",
@@ -240,11 +286,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:01+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:49.101307Z",
-      "ath": 408.6099853515625,
-      "ath_retrieved_at": "2026-10-07T07:08:47.413141Z",
+      "price_retrieved_at": "2026-10-07T12:58:59.422227Z",
+      "ath": 408.61,
+      "ath_retrieved_at": "2026-10-07T12:59:01.659132Z",
       "ath_error": null,
-      "drawdown_pct": -14.91152628077338
+      "drawdown_pct": -14.911529331147054,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2004-08-19",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 5568
     },
     {
       "region": "United States",
@@ -261,11 +311,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:01+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.726531Z",
+      "price_retrieved_at": "2026-10-07T12:59:00.028157Z",
       "ath": 796.25,
-      "ath_retrieved_at": "2026-10-07T07:08:47.512142Z",
+      "ath_retrieved_at": "2026-10-07T12:59:02.013570Z",
       "ath_error": null,
-      "drawdown_pct": -7.205023547880696
+      "drawdown_pct": -7.205023547880696,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2012-05-18",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 3616
     },
     {
       "region": "United States",
@@ -282,11 +336,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:01+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.797657Z",
-      "ath": 555.4500122070312,
-      "ath_retrieved_at": "2026-10-07T07:08:47.654173Z",
+      "price_retrieved_at": "2026-10-07T12:59:00.274649Z",
+      "ath": 555.45,
+      "ath_retrieved_at": "2026-10-07T12:59:02.611030Z",
       "ath_error": null,
-      "drawdown_pct": -4.707896594173533
+      "drawdown_pct": -4.707894499955012,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2000-01-03",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 6730
     },
     {
       "region": "United States",
@@ -303,11 +361,15 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:00+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:48.882108Z",
-      "ath": 243.3699951171875,
-      "ath_retrieved_at": "2026-10-07T07:08:47.834124Z",
+      "price_retrieved_at": "2026-10-07T12:59:02.640534Z",
+      "ath": 243.37,
+      "ath_retrieved_at": "2026-10-07T12:59:05.193333Z",
       "ath_error": null,
-      "drawdown_pct": -1.697002588671137
+      "drawdown_pct": -1.697004560956561,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2000-01-03",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 6730
     },
     {
       "ticker": "SHEL",
@@ -321,11 +383,17 @@
       "current_pct_change": 1.1396601740571999,
       "price_as_of": "2026-10-06T20:00:02+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:49.034610Z",
+      "price_retrieved_at": "2026-10-07T12:59:02.651511Z",
       "currency": "USD",
       "refresh_error": null,
-      "drawdown_pct": null,
-      "ath_error": "No saved ATH available; historical retrieval is disabled."
+      "drawdown_pct": -1.5431164901664185,
+      "ath_error": null,
+      "ath": 99.15,
+      "ath_retrieved_at": "2026-10-07T12:59:05.840083Z",
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2000-01-03",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 6730
     },
     {
       "region": "United States",
@@ -342,14 +410,19 @@
       "currency": "USD",
       "price_as_of": "2026-10-06T20:00:01+00:00",
       "source": "Yahoo Finance quote webpage",
-      "price_retrieved_at": "2026-10-07T12:29:49.066602Z",
-      "ath": 498.8299865722656,
-      "ath_retrieved_at": "2026-10-07T07:08:47.786502Z",
+      "price_retrieved_at": "2026-10-07T12:59:03.274313Z",
+      "ath": 498.83,
+      "ath_retrieved_at": "2026-10-07T12:59:04.838346Z",
       "ath_error": null,
-      "drawdown_pct": -23.6854218376363
+      "drawdown_pct": -23.685423891907053,
+      "ath_source": "Yahoo historical webpage daily highs",
+      "ath_history_start": "2010-06-29",
+      "ath_history_end": "2026-10-06",
+      "ath_history_rows": 4093
     }
   ],
   "source": "Yahoo Finance; per-row timestamps and errors apply",
   "request_id": "",
-  "workflow_run": "37621382415"
+  "workflow_run": "37624870457",
+  "ath_refresh_requested": true
 }
