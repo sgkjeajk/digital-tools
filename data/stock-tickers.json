@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 6,
+  "revision": 7,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-07T12:26:59.169Z",
+  "saved_at": "2026-10-07T12:29:38.582Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -56,6 +56,14 @@
       "ticker": "VTI",
       "enabled": true,
       "name": "Vanguard Morningstar Total Stock Market ETF",
+      "region": "United States",
+      "type": "ETF",
+      "metadata_source": "Nasdaq directory · 6 Oct 2026"
+    },
+    {
+      "ticker": "VUG",
+      "enabled": true,
+      "name": "Vanguard Morningstar Growth ETF",
       "region": "United States",
       "type": "ETF",
       "metadata_source": "Nasdaq directory · 6 Oct 2026"
@@ -115,6 +123,14 @@
       "region": "United States",
       "type": "Stock",
       "metadata_source": "Nasdaq directory · 6 Oct 2026"
+    },
+    {
+      "ticker": "SHEL",
+      "enabled": true,
+      "name": "Shell plc",
+      "region": "NYSE",
+      "type": "Stock",
+      "metadata_source": "Yahoo Finance quote webpage"
     },
     {
       "ticker": "TSLA",
