@@ -30,30 +30,27 @@ def symbol(value):
 
 def fetch(url):
     with urllib.request.urlopen(urllib.request.Request(url,headers=UA),timeout=12) as r:
-        return r.read().decode('utf-8')
+        body=r.read()
+        if body.startswith(b'\x1f\x8b'):
+            import gzip
+            body=gzip.decompress(body)
+        return body.decode('utf-8')
 
-def chart(ticker, history=False):
-    errors=[]
-    query=('period1=946684800&period2='+str(int(dt.datetime.now(dt.timezone.utc).timestamp()))+'&interval=1d') if history else 'range=5d&interval=1d'
-    for host in ('query1','query2'):
-        try:
-            raw=json.loads(fetch(f'https://{host}.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(ticker)}?{query}'))
-            result=raw['chart']['result'][0]
-            if result['meta'].get('symbol','').upper()!=ticker: raise ValueError('No exact symbol match')
-            return result, 'Yahoo '+host
-        except Exception as e: errors.append(type(e).__name__)
-    raise ValueError('Yahoo chart sources unavailable ('+', '.join(errors)+').')
+def page(ticker):
+    return fetch('https://finance.yahoo.com/quote/'+urllib.parse.quote(ticker)+'/').replace('\\"','"')
 
 def lookup(ticker):
     ticker=symbol(ticker)
-    if ticker in CATALOG:
-        x=CATALOG[ticker]
-        return {'ticker':ticker,'name':x['name'],'region':x['market'],'type':x['type'],'metadata_source':x['source']}
-    data,source=chart(ticker); m=data['meta']
-    if m.get('instrumentType') not in ('ETF','EQUITY'): raise ValueError('Only Stocks and ETFs are supported.')
-    name=m.get('longName') or m.get('shortName'); market=m.get('fullExchangeName') or m.get('exchangeName')
-    if not name or not market: raise ValueError('Incomplete ticker metadata; cannot add.')
-    return {'ticker':ticker,'name':name,'region':market,'type':'ETF' if m['instrumentType']=='ETF' else 'Stock','metadata_source':source+' '+now()}
+    if ticker not in CATALOG:
+        data=page_quote(ticker)
+        kind=data.get('quoteType')
+        name=data.get('longName') or data.get('shortName')
+        market=data.get('fullExchangeName') or data.get('exchange')
+        if kind not in ('ETF','EQUITY') or not name or not market:
+            raise ValueError('No verified Stock/ETF metadata on webpage.')
+        return {'ticker':ticker,'name':name,'region':market,'type':'ETF' if kind=='ETF' else 'Stock','metadata_source':'Yahoo Finance quote webpage'}
+    x=CATALOG[ticker]
+    return {'ticker':ticker,'name':x['name'],'region':x['market'],'type':x['type'],'metadata_source':x['source']}
 
 def validate(data):
     if not isinstance(data,dict) or data.get('version',1)!=1: raise ValueError('Unsupported configuration.')
@@ -85,52 +82,50 @@ def finite(v):
 def percentage(a,b):
     return (a/b-1)*100 if finite(a) and finite(b) and b>0 else None
 
-def quote(ticker):
-    try:
-        d,source=chart(ticker); m=d['meta']; cur=m.get('regularMarketPrice'); prev=m.get('previousClose')
-        pairs=[(t,c) for t,c in zip(d.get('timestamp',[]),d['indicators']['quote'][0]['close']) if finite(c)]
-        # Daily chart usually includes the current session; use exchange-local session dates.
-        offset=m.get('gmtoffset',0); stamp=m.get('regularMarketTime')
-        if not finite(stamp): raise ValueError('Quote has no market timestamp')
-        session=dt.datetime.fromtimestamp(stamp+offset,dt.timezone.utc).date()
-        closed=[c for t,c in pairs if dt.datetime.fromtimestamp(t+offset,dt.timezone.utc).date()<session]
-        if closed: prev=closed[-1]
-        pp=closed[-2] if len(closed)>1 else None
-        if not finite(cur) or cur<=0 or not finite(prev) or prev<=0: raise ValueError('Incomplete price')
-        return {'current_price':cur,'prev_close':prev,'prev_day_pct_change':percentage(prev,pp),'current_pct_change':percentage(cur,prev),'currency':m.get('currency'),'price_as_of':dt.datetime.fromtimestamp(stamp,dt.timezone.utc).isoformat(),'source':source,'price_retrieved_at':now()}
-    except Exception as primary:
-        # Fallback is the public quote page, not a saved value relabelled as fresh.
-        text=fetch('https://finance.yahoo.com/quote/'+urllib.parse.quote(ticker)+'/')
-        text=text.replace('\\"','"')
-        def raw(field):
-            match=re.search(r'"'+field+r'"\s*:\s*\{\s*"raw"\s*:\s*([0-9.]+)',text)
-            if not match: raise ValueError('Primary and fallback prices unavailable.') from primary
-            return float(match.group(1))
-        cur,prev,stamp=raw('regularMarketPrice'),raw('regularMarketPreviousClose'),raw('regularMarketTime')
-        if cur<=0 or prev<=0: raise ValueError('Invalid fallback quote.')
-        return {'current_price':cur,'prev_close':prev,'prev_day_pct_change':None,'current_pct_change':percentage(cur,prev),'currency':None,'price_as_of':dt.datetime.fromtimestamp(stamp,dt.timezone.utc).isoformat(),'source':'Yahoo public quote page fallback','price_retrieved_at':now()}
+def page_quote(ticker):
+    text=page(ticker)
+    matches=[]
+    for match in re.finditer(r'\{"quoteResponse"',text):
+        try:
+            payload=json.JSONDecoder().raw_decode(text[match.start():])[0]
+            matches.extend(q for q in payload['quoteResponse']['result'] if q.get('symbol','').upper()==ticker)
+        except (ValueError,KeyError):
+            continue
+    if not matches: raise ValueError('No exact-symbol quote on webpage')
+    data=matches[0]
+    return data
 
-def retrieve(x,old,history=True):
-    result={**old,**x}; result['refresh_error']=None
+def quote(ticker):
+    data=page_quote(ticker)
+    def raw(field):
+        value=data.get(field)
+        value=value.get('raw') if isinstance(value,dict) else value
+        if not finite(value): raise ValueError('Webpage quote field unavailable: '+field)
+        return value
+    cur,prev,stamp=raw('regularMarketPrice'),raw('regularMarketPreviousClose'),raw('regularMarketTime')
+    if cur<=0 or prev<=0: raise ValueError('Invalid webpage quote')
+    currency=data.get('currency')
+    return {'current_price':cur,'prev_close':prev,'current_pct_change':percentage(cur,prev),'price_as_of':dt.datetime.fromtimestamp(stamp,dt.timezone.utc).isoformat(),'source':'Yahoo Finance quote webpage','price_retrieved_at':now(),**({'currency':currency} if currency else {})}
+
+def retrieve(x,old,history=False):
+    result={**old,**x}
     try:
         result.update(quote(x['ticker']))
-        try:
-            if not history and finite(result.get('ath')):
-                historical=None
-            else:
-                historical,_=chart(x['ticker'],True)
-            highs=[h for t,h in zip(historical.get('timestamp',[]),historical['indicators']['quote'][0]['high']) if t>=946684800 and finite(h)] if historical else [result['ath']]
-            if not highs: raise ValueError('Historical highs unavailable')
-            result['ath']=max(highs); result['ath_retrieved_at']=now(); result['ath_error']=None
-        except Exception:
-            result['ath_error']='ATH refresh unavailable; retained prior ATH if present.'
-        if finite(result.get('ath')): result['ath']=max(result['ath'],result['current_price'])
-        result['drawdown_pct']=percentage(result['current_price'],result.get('ath'))
-    except Exception:
-        result['refresh_error']='Price sources unavailable. Saved value retained with its original timestamp.'
+        result['refresh_error']=None
+        # Historical data is never requested. Preserve its original retrieval timestamp.
+        if finite(result.get('ath')):
+            if result['current_price']>result['ath']:
+                result['ath']=result['current_price']
+                result['ath_source']='Observed new high from current-price scrape'
+            result['drawdown_pct']=percentage(result['current_price'],result['ath'])
+        else:
+            result['drawdown_pct']=None
+            result['ath_error']='No saved ATH available; historical retrieval is disabled.'
+    except Exception as error:
+        result['refresh_error']='Webpage scraping failed; retained saved price and timestamp. '+str(error)
     return result
 
-def refresh(history=True):
+def refresh(history=False):
     with LOCK: cfg=read_config()
     path=ROOT/'market-data.json'
     old=json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}

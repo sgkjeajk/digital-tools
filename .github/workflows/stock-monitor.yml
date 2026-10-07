@@ -8,8 +8,8 @@ on:
       - scripts/github_market_update.py
       - .github/workflows/stock-monitor.yml
   schedule:
-    # SGT main 08:00/14:00/20:00, backups 10:00/12:00/16:00/22:00/00:00.
-    - cron: '0 0,2,4,6,8,12,14,16 * * *'
+    # Every 15 minutes; GitHub may delay scheduled runs.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       lookupTicker:
