@@ -1,6 +1,23 @@
 """Actions entry point: price snapshot or one exact-symbol metadata lookup."""
-import os
+import os, json, datetime as dt
 from market_service import ROOT,atomic,lookup,now,refresh,symbol,validate,read_config
+
+def prices_are_fresh(config, data, at=None):
+    """Skip only when every enabled ticker has a recent successful price."""
+    if data.get('config_revision') != config.get('revision',0): return False
+    active=[x['ticker'] for x in config['instruments'] if x['enabled']]
+    if not active: return False
+    rows={x['ticker']:x for x in data.get('instruments',[])}
+    at=at or dt.datetime.now(dt.timezone.utc)
+    for ticker in active:
+        row=rows.get(ticker,{})
+        if row.get('refresh_error'): return False
+        try:
+            stamp=dt.datetime.fromisoformat(row['price_retrieved_at'].replace('Z','+00:00'))
+            age=(at-stamp).total_seconds()
+            if not 0 <= age < 900: return False
+        except (KeyError,ValueError,TypeError): return False
+    return True
 
 if __name__=='__main__':
     ticker=os.environ.get('LOOKUP_TICKER','').strip()
@@ -12,8 +29,15 @@ if __name__=='__main__':
         path=ROOT/'data/lookups'/f'{ticker}.json';path.parent.mkdir(parents=True,exist_ok=True);atomic(path,result)
         print('Completed metadata lookup for',ticker)
     else:
-        validate(read_config())
+        config=read_config()
+        validate(config)
         history=os.environ.get('REFRESH_ATH','false').lower()=='true'
+        if os.environ.get('TRIGGER_EVENT')=='schedule' and not history:
+            try: saved=json.loads((ROOT/'market-data.json').read_text(encoding='utf-8'))
+            except (OSError,ValueError): saved={}
+            if prices_are_fresh(config,saved):
+                print('Skipped scraping: all enabled prices were successfully retrieved less than 15 minutes ago.')
+                raise SystemExit(0)
         data=refresh(history=history);data['request_id']=request_id;data['workflow_run']=os.environ.get('GITHUB_RUN_ID');data['ath_refresh_requested']=history
         atomic(ROOT/'market-data.json',data);atomic(ROOT/'data/stock-monitor.json',data)
         print('Price refresh completed:',len(data['instruments']),'tickers;',sum(bool(x.get('refresh_error')) for x in data['instruments']),'unavailable prices')
