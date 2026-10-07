@@ -1,0 +1,58 @@
+name: Update Stock ETF Monitor
+on:
+  push:
+    branches: [main]
+    paths:
+      - data/stock-tickers.json
+      - scripts/market_service.py
+      - scripts/github_market_update.py
+      - .github/workflows/stock-monitor.yml
+  schedule:
+    # SGT main 08:00/14:00/20:00, backups 10:00/12:00/16:00/22:00/00:00.
+    - cron: '0 0,2,4,6,8,12,14,16 * * *'
+  workflow_dispatch:
+    inputs:
+      lookupTicker:
+        description: Optional ticker-only metadata lookup
+        required: false
+        default: ''
+        type: string
+      requestId:
+        description: Optional browser request correlation ID
+        required: false
+        default: ''
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: stock-etf-monitor-update
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Retrieve verified market data or metadata
+        env:
+          LOOKUP_TICKER: ${{ inputs.lookupTicker }}
+          REQUEST_ID: ${{ inputs.requestId }}
+        run: python scripts/github_market_update.py
+      - name: Commit shared result without overwriting a newer ticker list
+        run: |
+          git fetch origin main
+          if [ "$(git rev-parse HEAD:data/stock-tickers.json)" != "$(git rev-parse origin/main:data/stock-tickers.json)" ]; then
+            echo 'A newer configuration exists; its queued update will handle prices.'
+            exit 0
+          fi
+          git add market-data.json data/stock-monitor.json data/lookups
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update Stock ETF Monitor shared result'
+          git pull --rebase origin main
+          git push origin HEAD:main
