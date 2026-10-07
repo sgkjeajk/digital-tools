@@ -9,7 +9,7 @@ on:
       - .github/workflows/stock-monitor.yml
   schedule:
     # Every 15 minutes; GitHub may delay scheduled runs.
-    - cron: '7,22,37,52 * * * *'
+    - cron: '9,24,39,54 * * * *'
     # Full historical highs: 08:00, 14:00 and 20:00 SGT.
     - cron: '0 0,6,12 * * *'
   workflow_dispatch:
