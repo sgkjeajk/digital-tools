@@ -37,7 +37,13 @@ def fetch(url):
         return body.decode('utf-8')
 
 def page(ticker):
-    return fetch('https://finance.yahoo.com/quote/'+urllib.parse.quote(ticker)+'/').replace('\\"','"')
+    hosts=('sg.finance.yahoo.com','finance.yahoo.com') if ticker.endswith('.SI') else ('finance.yahoo.com','sg.finance.yahoo.com')
+    for host in hosts:
+        try:
+            return fetch('https://'+host+'/quote/'+urllib.parse.quote(ticker)+'/').replace('\\"','"')
+        except Exception as error:
+            last=error
+    raise last
 
 def lookup(ticker):
     ticker=symbol(ticker)
