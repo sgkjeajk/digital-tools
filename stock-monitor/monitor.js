@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id), valid=n=>typeof n==='number'&&Number.isFinite(n), fmt=n=>valid(n)?n.toFixed(2):'—', pct=n=>valid(n)?(n>=0?'+':'')+n.toFixed(2)+'%':'—', cls=n=>valid(n)&&n>0?'pos':valid(n)&&n<0?'neg':'';
 const sg=t=>t&&!Number.isNaN(Date.parse(t))?new Intl.DateTimeFormat('en-SG',{timeZone:'Asia/Singapore',dateStyle:'medium',timeStyle:'short'}).format(new Date(t))+' SGT':'Not yet retrieved';
 let interval, running=false;
-async function get(path){const response=await fetch('https://raw.githubusercontent.com/sgkjeajk/digital-tools/main/'+path.replace(/^\.\.\//,'' )+'?ts='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('Saved data unavailable: '+response.status);return response.json();}
+async function get(path){const response=await fetch(path+'?ts='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('Saved data unavailable: '+response.status);return response.json();}
 function cell(tr,text,className=''){const td=document.createElement('td');td.textContent=text;td.className=className;tr.append(td);return td;}
 function render(cfg,data){
  const prices=new Map((data.instruments||[]).map(x=>[x.ticker,x]));const active=cfg.instruments.filter(x=>x.enabled).sort((a,b)=>(a.type==='ETF'?0:1)-(b.type==='ETF'?0:1)||a.ticker.localeCompare(b.ticker));
