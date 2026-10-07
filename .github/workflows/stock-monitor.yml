@@ -10,6 +10,8 @@ on:
   schedule:
     # Every 15 minutes; GitHub may delay scheduled runs.
     - cron: '7,22,37,52 * * * *'
+    # Full historical highs: 08:00, 14:00 and 20:00 SGT.
+    - cron: '0 0,6,12 * * *'
   workflow_dispatch:
     inputs:
       lookupTicker:
@@ -41,6 +43,7 @@ jobs:
         env:
           LOOKUP_TICKER: ${{ inputs.lookupTicker }}
           REQUEST_ID: ${{ inputs.requestId }}
+          REFRESH_ATH: ${{ github.event_name != 'schedule' || github.event.schedule == '0 0,6,12 * * *' }}
         run: python scripts/github_market_update.py
       - name: Commit shared result without overwriting a newer ticker list
         run: |

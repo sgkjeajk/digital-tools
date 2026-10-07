@@ -88,8 +88,8 @@ def finite(v):
 def percentage(a,b):
     return (a/b-1)*100 if finite(a) and finite(b) and b>0 else None
 
-def page_quote(ticker):
-    text=page(ticker)
+def page_quote(ticker,text=None):
+    text=page(ticker) if text is None else text
     matches=[]
     for match in re.finditer(r'\{"quoteResponse"',text):
         try:
@@ -113,12 +113,53 @@ def quote(ticker):
     currency=data.get('currency')
     return {'current_price':cur,'prev_close':prev,'current_pct_change':percentage(cur,prev),'price_as_of':dt.datetime.fromtimestamp(stamp,dt.timezone.utc).isoformat(),'source':'Yahoo Finance quote webpage','price_retrieved_at':now(),**({'currency':currency} if currency else {})}
 
+def historical_high(ticker):
+    from html.parser import HTMLParser
+    class Rows(HTMLParser):
+        def __init__(self): super().__init__();self.rows=[];self.row=None;self.cell=None
+        def handle_starttag(self,tag,attrs):
+            if tag=='tr': self.row=[]
+            if tag=='td' and self.row is not None: self.cell=[]
+        def handle_data(self,data):
+            if self.cell is not None: self.cell.append(data)
+        def handle_endtag(self,tag):
+            if tag=='td' and self.cell is not None:
+                self.row.append(''.join(self.cell).strip());self.cell=None
+            if tag=='tr' and self.row is not None:
+                self.rows.append(self.row);self.row=None
+    end=int(dt.datetime.now(dt.timezone.utc).timestamp())
+    hosts=('sg.finance.yahoo.com','finance.yahoo.com') if ticker.endswith('.SI') else ('finance.yahoo.com','sg.finance.yahoo.com')
+    for host in hosts:
+        try:
+            text=fetch('https://'+host+'/quote/'+urllib.parse.quote(ticker)+'/history/?period1=946684800&period2='+str(end)).replace('\\"','"')
+            metadata=page_quote(ticker,text)
+            parser=Rows();parser.feed(text)
+            points=[]
+            for row in parser.rows:
+                if len(row)!=7: continue
+                try:
+                    date=dt.datetime.strptime(row[0],'%b %d, %Y').date()
+                    high=float(row[2].replace(',',''))
+                    if date>=dt.date(2000,1,1) and finite(high) and high>0: points.append((date,high))
+                except ValueError: continue
+            if not points: raise ValueError('No historical daily highs on webpage')
+            inception=metadata.get('firstTradeDateMilliseconds')
+            if isinstance(inception,dict): inception=inception.get('raw')
+            start=max(dt.date(2000,1,1),dt.datetime.fromtimestamp(inception/1000,dt.timezone.utc).date()) if finite(inception) else dt.date(2000,1,1)
+            oldest,newest=min(d for d,h in points),max(d for d,h in points)
+            if (oldest-start).days>10: raise ValueError('Historical table does not reach inception or January 2000')
+            if (dt.datetime.now(dt.timezone.utc).date()-newest).days>10: raise ValueError('Historical table is outdated')
+            if len(points)<max(1,(newest-oldest).days*0.55): raise ValueError('Historical daily table appears incomplete')
+            return {'ath':max(h for d,h in points),'ath_retrieved_at':now(),'ath_error':None,'ath_source':'Yahoo historical webpage daily highs','ath_history_start':oldest.isoformat(),'ath_history_end':newest.isoformat(),'ath_history_rows':len(points)}
+        except Exception as error: last=error
+    raise last
+
 def retrieve(x,old,history=False):
     result={**old,**x}
     try:
         result.update(quote(x['ticker']))
         result['refresh_error']=None
-        # Historical data is never requested. Preserve its original retrieval timestamp.
+        # Price-only runs preserve historical data and its original timestamp.
         if finite(result.get('ath')):
             if result['current_price']>result['ath']:
                 result['ath']=result['current_price']
@@ -129,6 +170,14 @@ def retrieve(x,old,history=False):
             result['ath_error']='No saved ATH available; historical retrieval is disabled.'
     except Exception as error:
         result['refresh_error']='Webpage scraping failed; retained saved price and timestamp. '+str(error)
+    if history:
+        try:
+            result.update(historical_high(x['ticker']))
+            if finite(result.get('current_price')):
+                result['ath']=max(result['ath'],result['current_price'])
+            result['drawdown_pct']=percentage(result.get('current_price'),result['ath'])
+        except Exception as error:
+            result['ath_error']='Historical scrape failed; saved ATH and timestamp retained. '+str(error)
     return result
 
 def refresh(history=False):

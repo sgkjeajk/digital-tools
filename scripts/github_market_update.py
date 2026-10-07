@@ -13,6 +13,7 @@ if __name__=='__main__':
         print('Completed metadata lookup for',ticker)
     else:
         validate(read_config())
-        data=refresh(history=False);data['request_id']=request_id;data['workflow_run']=os.environ.get('GITHUB_RUN_ID')
+        history=os.environ.get('REFRESH_ATH','false').lower()=='true'
+        data=refresh(history=history);data['request_id']=request_id;data['workflow_run']=os.environ.get('GITHUB_RUN_ID');data['ath_refresh_requested']=history
         atomic(ROOT/'market-data.json',data);atomic(ROOT/'data/stock-monitor.json',data)
         print('Price refresh completed:',len(data['instruments']),'tickers;',sum(bool(x.get('refresh_error')) for x in data['instruments']),'unavailable prices')
