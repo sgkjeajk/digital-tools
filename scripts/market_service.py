@@ -128,7 +128,7 @@ def historical_high(ticker):
             if tag=='tr' and self.row is not None:
                 self.rows.append(self.row);self.row=None
     end=int(dt.datetime.now(dt.timezone.utc).timestamp())
-    hosts=('sg.finance.yahoo.com','finance.yahoo.com') if ticker.endswith('.SI') else ('finance.yahoo.com','sg.finance.yahoo.com')
+    hosts=('sg.finance.yahoo.com','finance.yahoo.com','uk.finance.yahoo.com','ca.finance.yahoo.com','au.finance.yahoo.com') if ticker.endswith('.SI') else ('finance.yahoo.com','sg.finance.yahoo.com')
     for host in hosts:
         try:
             text=fetch('https://'+host+'/quote/'+urllib.parse.quote(ticker)+'/history/?period1=946684800&period2='+str(end)).replace('\\"','"')
