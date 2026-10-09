@@ -1,0 +1,45 @@
+name: Yahoo Finance individual ticker browser verification (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/yahoo-individual-ticker-test.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Inspect Yahoo individual current quote and historical high pages
+        run: |
+          python - <<'PY'
+          import json,re,datetime as dt
+          from playwright.sync_api import sync_playwright
+          symbols=('AAPL','D05.SI','SPY')
+          with sync_playwright() as p:
+            b=p.chromium.launch(headless=True,args=['--no-sandbox'])
+            for symbol in symbols:
+              page=b.new_page(locale='en-US')
+              for kind,path in (('current',''),('historical','history/')):
+                url='https://finance.yahoo.com/quote/'+symbol+'/'+path
+                try:
+                  response=page.goto(url,wait_until='domcontentloaded',timeout=25000)
+                  page.wait_for_timeout(1800)
+                  text=page.locator('body').inner_text(timeout=8000)
+                  tables=page.locator('table')
+                  samples=[]
+                  for i in range(min(tables.count(),3)):
+                    samples.append(tables.nth(i).inner_text(timeout=5000)[:550])
+                  quote_labels=[x[:110] for x in re.findall(r'(?im)^.{0,25}(?:At close|Previous Close|Currency in|Market open|Market closed|Historical Prices|Date\s+Open\s+High).{0,80}$',text)[:8]]
+                  print('YAHOO_BROWSER_RESULT',json.dumps({'ticker':symbol,'kind':kind,'http':response.status if response else None,'title':page.title()[:110],'url':page.url,'quote_labels':quote_labels,'table_count':tables.count(),'tables':samples,'body_start':text[:350]}))
+                except Exception as e:print('YAHOO_BROWSER_ERROR',json.dumps({'ticker':symbol,'kind':kind,'error':str(e)[:250]}))
+              page.close()
+            b.close()
+          PY
