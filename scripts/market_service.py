@@ -147,7 +147,30 @@ def quote(ticker):
     except Exception as webpage_error:
         try: return quote_chart(ticker)
         except Exception as chart_error:
-            raise ValueError('Yahoo webpage failed: '+str(webpage_error)+'; '+str(chart_error))
+            try: return quote_google(ticker)
+            except Exception as google_error:
+                raise ValueError('Yahoo webpage failed: '+str(webpage_error)+'; Yahoo chart failed: '+str(chart_error)+'; Google Finance failed: '+str(google_error))
+
+def quote_google(ticker):
+    """Last-resort independent current-price source, never used for ATH."""
+    import subprocess,sys
+    script=str(ROOT/'scripts/google_price_fallback.py')
+    process=subprocess.run([sys.executable,script,ticker],capture_output=True,text=True,timeout=45)
+    if process.returncode:
+        raise ValueError('Google rendered ticker quote failed: '+(process.stdout or process.stderr)[-400:])
+    data=json.loads(process.stdout.strip())
+    if data.get('source')!='Google Finance individual ticker (rendered)' or not finite(data.get('current_price')) or data['current_price']<=0:
+        raise ValueError('Unverified Google quote')
+    expected='SGD' if ticker.endswith('.SI') else 'USD'
+    if data.get('currency')!=expected:raise ValueError('Google quote currency mismatch')
+    quote_time=dt.datetime.fromisoformat(data['price_as_of'])
+    if quote_time.tzinfo is None:raise ValueError('Missing Google quote timezone')
+    age=dt.datetime.now(dt.timezone.utc)-quote_time
+    if age<dt.timedelta(minutes=-5) or age>dt.timedelta(days=7):raise ValueError('Stale Google quote')
+    # Google rendered primary price block does not establish previous close.
+    data['prev_close']=None
+    data['current_pct_change']=None
+    return data
 
 def historical_high(ticker):
     from html.parser import HTMLParser
