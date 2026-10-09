@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 7,
+  "revision": 8,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-07T12:29:38.582Z",
+  "saved_at": "2026-10-09T13:39:23.049Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -32,14 +32,6 @@
       "ticker": "SPY",
       "enabled": true,
       "name": "State Street SPDR S&P 500 ETF Trust",
-      "region": "United States",
-      "type": "ETF",
-      "metadata_source": "Nasdaq directory · 6 Oct 2026"
-    },
-    {
-      "ticker": "URTH",
-      "enabled": true,
-      "name": "iShares MSCI World ETF",
       "region": "United States",
       "type": "ETF",
       "metadata_source": "Nasdaq directory · 6 Oct 2026"
@@ -139,6 +131,14 @@
       "region": "United States",
       "type": "Stock",
       "metadata_source": "Nasdaq directory · 6 Oct 2026"
+    },
+    {
+      "ticker": "U11.SI",
+      "enabled": true,
+      "name": "United Overseas Bank Ltd",
+      "region": "Singapore",
+      "type": "Stock",
+      "metadata_source": "SGX reference · 7 Oct 2026"
     }
   ]
 }
