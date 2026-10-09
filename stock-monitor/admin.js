@@ -4,6 +4,27 @@ const CATALOG={};
 const KEY='market-watch-admin.local.v1';
 const $=id=>document.getElementById(id);
 let items=[],busy=false,editing=null,savedItems=[],savedRefresh=15,revision=0,connected=false;
+let displaySortKey=null,displaySortDirection='asc';
+function setDisplaySort(key){
+ displaySortDirection=displaySortKey===key&&displaySortDirection==='asc'?'desc':'asc';
+ displaySortKey=key;render();
+}
+function compareDisplay(a,b){
+ if(!displaySortKey)return ({ETF:0,Stock:1}[a.type]??2)-({ETF:0,Stock:1}[b.type]??2)||a.ticker.localeCompare(b.ticker,'en');
+ const first=displaySortKey==='ticker'?a.ticker:(a.market||'');
+ const second=displaySortKey==='ticker'?b.ticker:(b.market||'');
+ const primary=first.localeCompare(second,'en',{numeric:true,sensitivity:'base'});
+ return (displaySortDirection==='asc'?primary:-primary)||a.ticker.localeCompare(b.ticker,'en');
+}
+function refreshSortHeaders(){
+ for(const th of document.querySelectorAll('th[data-sort-key]')){
+  const selected=th.dataset.sortKey===displaySortKey;
+  th.setAttribute('aria-sort',selected?(displaySortDirection==='asc'?'ascending':'descending'):'none');
+  const button=th.querySelector('button');
+  button.querySelector('.sort-arrow').textContent=selected?(displaySortDirection==='asc'?'▲':'▼'):'↕';
+  button.setAttribute('aria-label','Sort '+(th.dataset.sortKey==='ticker'?'ticker':'region or market')+(selected?' '+displaySortDirection:''));
+ }
+}
 const normalize=s=>{if(typeof s!=='string')throw Error('Ticker must be text.');const t=s.trim().toUpperCase();if(!/^[A-Z0-9][A-Z0-9.\-]{0,31}$/.test(t)||t.endsWith('.')||t.endsWith('-')||/[.\-]{2}/.test(t))throw Error('Invalid ticker format. Use a symbol such as SPY, AAPL or D05.SI.');return t;};
 const sort=list=>list.sort((a,b)=>({ETF:0,Stock:1}[a.type]??2)-({ETF:0,Stock:1}[b.type]??2)||a.ticker.localeCompare(b.ticker,'en'));
 function tell(text,kind=''){ $('message').textContent=text;$('message').className=kind; }
@@ -23,9 +44,12 @@ function cell(text){const td=document.createElement('td');td.textContent=text;re
 function action(text,fn,cls=''){const b=document.createElement('button');b.type='button';b.textContent=text;b.className=cls;b.disabled=busy;b.addEventListener('click',fn);return b;}
 function render(){
  $('total').textContent=items.length;$('enabled').textContent=items.filter(x=>x.enabled).length;$('etfs').textContent=items.filter(x=>x.type==='ETF').length;$('stocks').textContent=items.filter(x=>x.type==='Stock').length;
- const query=$('search').value.trim().toUpperCase(),filtered=items.filter(x=>(x.ticker+' '+x.name).toUpperCase().includes(query));$('rows').replaceChildren();
- updateDirty();for(const r of filtered){const tr=document.createElement('tr');tr.dataset.ticker=r.ticker;tr.append(cell(String(items.indexOf(r)+1)),cell(r.ticker));const name=cell(r.name||'Metadata pending');const small=document.createElement('small');small.textContent=r.source||'Awaiting verification';name.append(small);tr.append(name,cell(r.market||'Unverified'));const type=cell('');const badge=document.createElement('span');badge.className='badge '+(r.type==='Stock'?'stock':r.type==='ETF'?'':'pending');badge.textContent=r.type||'Pending';type.append(badge);tr.append(type);const status=cell('');const toggle=document.createElement('input');toggle.type='checkbox';toggle.className='enabled-check';toggle.checked=r.enabled;toggle.disabled=busy;toggle.setAttribute('aria-label','Enabled '+r.ticker);toggle.onchange=()=>{commit(items.map(x=>x.ticker===r.ticker?{...x,enabled:toggle.checked}:x));tell(r.ticker+' '+(toggle.checked?'enabled.':'disabled.'));};status.append(toggle);tr.append(status);const actions=cell('');actions.className='actions';actions.append(action('Edit',()=>openEdit(r)),action('Delete',()=>remove(r),'danger'));tr.append(actions);$('rows').append(tr);}
+ const query=$('search').value.trim().toUpperCase(),filtered=items.filter(x=>(x.ticker+' '+x.name).toUpperCase().includes(query)).sort(compareDisplay);$('rows').replaceChildren();refreshSortHeaders();
+ updateDirty();for(const r of filtered){const tr=document.createElement('tr');tr.dataset.ticker=r.ticker;tr.append(cell(String(filtered.indexOf(r)+1)),cell(r.ticker));const name=cell(r.name||'Metadata pending');const small=document.createElement('small');small.textContent=r.source||'Awaiting verification';name.append(small);tr.append(name,cell(r.market||'Unverified'));const type=cell('');const badge=document.createElement('span');badge.className='badge '+(r.type==='Stock'?'stock':r.type==='ETF'?'':'pending');badge.textContent=r.type||'Pending';type.append(badge);tr.append(type);const status=cell('');const toggle=document.createElement('input');toggle.type='checkbox';toggle.className='enabled-check';toggle.checked=r.enabled;toggle.disabled=busy;toggle.setAttribute('aria-label','Enabled '+r.ticker);toggle.onchange=()=>{commit(items.map(x=>x.ticker===r.ticker?{...x,enabled:toggle.checked}:x));tell(r.ticker+' '+(toggle.checked?'enabled.':'disabled.'));};status.append(toggle);tr.append(status);const actions=cell('');actions.className='actions';actions.append(action('Edit',()=>openEdit(r)),action('Delete',()=>remove(r),'danger'));tr.append(actions);$('rows').append(tr);}
  if(!filtered.length){const tr=document.createElement('tr'),td=cell(items.length?'No matching tickers.':'Your watchlist is empty. Enter a ticker above to start.');td.colSpan=7;td.className='empty';tr.append(td);$('rows').append(tr);}
+}
+for(const th of document.querySelectorAll('th[data-sort-key]')){
+ const button=th.querySelector('button');if(button)button.addEventListener('click',()=>setDisplaySort(th.dataset.sortKey));
 }
 function confirmAction(title,text,label){return new Promise(resolve=>{const d=$('confirmDialog');$('confirmTitle').textContent=title;$('confirmText').textContent=text;$('confirmYes').textContent=label;let completed=false;function finish(answer){if(completed)return;completed=true;d.close();d.oncancel=null;$('confirmYes').onclick=null;$('confirmCancel').onclick=null;resolve(answer);}$('confirmYes').onclick=()=>finish(true);$('confirmCancel').onclick=()=>finish(false);d.oncancel=e=>{e.preventDefault();finish(false);};d.showModal();$('confirmCancel').focus();});}
 async function remove(r){if(busy)return;if(await confirmAction('Delete '+r.ticker+'?','This removes '+r.ticker+' after Save Changes. Optional Export keeps a backup.','Delete Ticker')){commit(items.filter(x=>x.ticker!==r.ticker));tell(r.ticker+' deleted.');}}
