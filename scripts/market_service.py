@@ -208,14 +208,17 @@ def retrieve(x,old,history=False):
             result['ath_error']='Historical scrape failed; saved ATH and timestamp retained. '+str(error)
     return result
 
-def refresh(history=False):
+def refresh(history=False, eligible_tickers=None):
     with LOCK: cfg=read_config()
     path=ROOT/'market-data.json'
     old=json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
     prior={x['ticker']:x for x in old.get('instruments',[])}
     active=[x for x in cfg['instruments'] if x['enabled']]
+    selected=[x for x in active if eligible_tickers is None or x['ticker'] in eligible_tickers]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        rows=list(pool.map(lambda x:retrieve(x,prior.get(x['ticker'],{}),history),active))
+        updated={x['ticker']:row for x,row in zip(selected,pool.map(lambda x:retrieve(x,prior.get(x['ticker'],{}),history),selected))}
+    # Preserve closed-market prices and their original retrieval timestamps.
+    rows=[updated.get(x['ticker'],{**prior.get(x['ticker'],{}),**x}) for x in active]
     result={'generated_at':now(),'ath_since':'2000-01-01','config_revision':cfg.get('revision',0),'instruments':rows,'source':'Yahoo Finance; per-row timestamps and errors apply'}
     with LOCK:
         if read_config().get('revision',0)!=cfg.get('revision',0): raise RuntimeError('Configuration changed during refresh; retry.')
