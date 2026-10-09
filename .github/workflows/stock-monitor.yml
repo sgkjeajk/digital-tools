@@ -5,6 +5,7 @@ on:
     paths:
       - data/stock-tickers.json
       - scripts/market_service.py
+      - scripts/google_price_fallback.py
       - scripts/github_market_update.py
       - .github/workflows/stock-monitor.yml
   schedule:
@@ -41,6 +42,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Prepare Google Finance browser fallback
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
       - name: Retrieve verified market data or metadata
         env:
           TRIGGER_EVENT: ${{ github.event_name }}
