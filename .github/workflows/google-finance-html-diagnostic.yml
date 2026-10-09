@@ -1,0 +1,43 @@
+name: Google Finance HTML structure diagnostic (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/google-finance-html-diagnostic.yml'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect live AAPL and DBS price HTML without modifying data
+        run: |
+          python - <<'PY'
+          import re, json, html, urllib.request
+          from html.parser import HTMLParser
+          class Parser(HTMLParser):
+              def __init__(self): super().__init__();self.stack=[];self.prices=[];self.can=[];self.collect=[]
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs); self.stack.append((tag,a))
+                  if tag=='link' and a.get('rel')=='canonical':self.can.append(a.get('href'))
+              def handle_endtag(self,tag):
+                  if self.stack:self.stack.pop()
+              def handle_data(self,data):
+                  if not data.strip():return
+                  for tag,a in reversed(self.stack):
+                      cls=a.get('class','')
+                      if 'YMlKec' in cls or 'fxKbKc' in cls:
+                          self.prices.append({'tag':tag,'class':cls,'text':data.strip()[:90]});break
+          for ticker,exchange in [('AAPL','NASDAQ'),('D05','SGX')]:
+              req=urllib.request.Request(f'https://www.google.com/finance/quote/{ticker}:{exchange}?hl=en',headers={'User-Agent':'Mozilla/5.0','Accept-Language':'en-US,en;q=0.9'})
+              with urllib.request.urlopen(req,timeout=15) as res:body=res.read(2_000_000).decode('utf-8','replace')
+              p=Parser();p.feed(body)
+              print('HTML_DIAGNOSTIC',json.dumps({'symbol':ticker+':'+exchange,'canonical':p.can[:2],'price_class_elements':p.prices[:12],'price_class_count':len(p.prices),'data_last_price_count':body.count('data-last-price'),'YMlKec_count':body.count('YMlKec'),'price_currency_patterns':{k:len(re.findall(k,body,re.I)) for k in ('USD','SGD','Previous close','Last updated','Market closed','Oct 9','Oct 10')}}))
+              for term in ('YMlKec fxKbKc','data-last-price','Previous close','Market closed','Last updated'):
+                  m=re.search(re.escape(term),body,re.I)
+                  if m:
+                      snippet=body[max(0,m.start()-160):m.start()+230]
+                      snippet=re.sub(r'<script\b.*?</script>','[script]',snippet,flags=re.I|re.S)
+                      print('HTML_SAMPLE',json.dumps({'symbol':ticker+':'+exchange,'term':term,'sample':snippet[:390]}))
+          PY
