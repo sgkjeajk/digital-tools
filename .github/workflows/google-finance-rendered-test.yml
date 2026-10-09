@@ -1,0 +1,45 @@
+name: Google Finance rendered quote test (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/google-finance-rendered-test.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify individual rendered stock pages
+        run: |
+          python - <<'PY'
+          import re,json
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
+              for symbol in ('AAPL:NASDAQ','D05:SGX','SPY:NYSEARCA'):
+                  page=browser.new_page(locale='en-US')
+                  try:
+                      response=page.goto('https://www.google.com/finance/quote/'+symbol+'?hl=en',wait_until='domcontentloaded',timeout=30000)
+                      try:page.locator('main').wait_for(timeout=10000)
+                      except Exception:pass
+                      page.wait_for_timeout(2500)
+                      candidates=[]
+                      for selector in ('.YMlKec.fxKbKc','.AHmHk .fxKbKc','.AHmHk','main [data-last-price]'):
+                          vals=page.locator(selector).all_text_contents()
+                          if vals:candidates.append({'selector':selector,'values':[v.strip()[:70] for v in vals[:5]]})
+                      text=page.locator('body').inner_text(timeout=8000)
+                      at=text.find(symbol)
+                      print('RENDERED_QUOTE',json.dumps({'symbol':symbol,'status':response.status if response else None,'title':page.title(),'url':page.url,'candidates':candidates,'body_near_symbol':text[max(0,at-70):at+450] if at>=0 else text[:350]},ensure_ascii=True))
+                  except Exception as e:print('RENDERED_ERROR',json.dumps({'symbol':symbol,'error':str(e)[:400]}))
+                  finally:page.close()
+              browser.close()
+          PY
