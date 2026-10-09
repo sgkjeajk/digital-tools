@@ -101,7 +101,7 @@ def page_quote(ticker,text=None):
     data=matches[0]
     return data
 
-def quote(ticker):
+def quote_webpage(ticker):
     data=page_quote(ticker)
     def raw(field):
         value=data.get(field)
@@ -112,6 +112,42 @@ def quote(ticker):
     if cur<=0 or prev<=0: raise ValueError('Invalid webpage quote')
     currency=data.get('currency')
     return {'current_price':cur,'prev_close':prev,'current_pct_change':percentage(cur,prev),'price_as_of':dt.datetime.fromtimestamp(stamp,dt.timezone.utc).isoformat(),'source':'Yahoo Finance quote webpage','price_retrieved_at':now(),**({'currency':currency} if currency else {})}
+
+
+def quote_chart(ticker):
+    """Yahoo per-ticker chart metadata fallback; regular session only."""
+    errors=[]
+    for host in ('query1.finance.yahoo.com','query2.finance.yahoo.com'):
+        try:
+            url='https://'+host+'/v8/finance/chart/'+urllib.parse.quote(ticker)+'?range=5d&interval=1m'
+            payload=json.loads(fetch(url))
+            items=payload.get('chart',{}).get('result') or []
+            if len(items)!=1: raise ValueError('No unique chart result')
+            meta=items[0].get('meta') or {}
+            if meta.get('symbol','').upper()!=ticker.upper(): raise ValueError('Chart ticker mismatch')
+            expected='SGD' if ticker.endswith('.SI') else 'USD'
+            if meta.get('currency')!=expected: raise ValueError('Unexpected quote currency')
+            cur=meta.get('regularMarketPrice')
+            prev=meta.get('previousClose')
+            stamp=meta.get('regularMarketTime')
+            if not finite(cur) or cur<=0 or not finite(prev) or prev<=0: raise ValueError('Missing regular price or previous close')
+            if not finite(stamp) or stamp<=0: raise ValueError('Missing original market quote timestamp')
+            quote_time=dt.datetime.fromtimestamp(stamp,dt.timezone.utc)
+            if quote_time>dt.datetime.now(dt.timezone.utc)+dt.timedelta(minutes=5): raise ValueError('Future quote timestamp')
+            return {'current_price':cur,'prev_close':prev,'current_pct_change':percentage(cur,prev),
+                    'price_as_of':quote_time.isoformat(),'source':'Yahoo Finance individual ticker chart',
+                    'price_retrieved_at':now(),'currency':expected}
+        except Exception as error: errors.append(host+': '+str(error))
+    raise ValueError('Yahoo individual ticker chart unavailable: '+'; '.join(errors))
+
+def quote(ticker):
+    """Try the individual Yahoo quote webpage, then the same ticker's chart metadata."""
+    try:
+        return quote_webpage(ticker)
+    except Exception as webpage_error:
+        try: return quote_chart(ticker)
+        except Exception as chart_error:
+            raise ValueError('Yahoo webpage failed: '+str(webpage_error)+'; '+str(chart_error))
 
 def historical_high(ticker):
     from html.parser import HTMLParser
