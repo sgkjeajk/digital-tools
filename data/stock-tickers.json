@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 9,
+  "revision": 10,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-09T13:39:58.512Z",
+  "saved_at": "2026-10-09T15:08:59.850Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -104,6 +104,14 @@
       "ticker": "MSFT",
       "enabled": true,
       "name": "Microsoft Corporation - Common Stock",
+      "region": "United States",
+      "type": "Stock",
+      "metadata_source": "Nasdaq directory · 6 Oct 2026"
+    },
+    {
+      "ticker": "NDAQ",
+      "enabled": true,
+      "name": "Nasdaq, Inc. - Common Stock",
       "region": "United States",
       "type": "Stock",
       "metadata_source": "Nasdaq directory · 6 Oct 2026"
