@@ -190,6 +190,51 @@ def historical_high(ticker):
         except Exception as error: last=error
     raise last
 
+
+def historical_high_chart(ticker):
+    """Second Yahoo individual-ticker ATH route; full daily highs, never a MAX line chart."""
+    errors=[]
+    end=int(dt.datetime.now(dt.timezone.utc).timestamp())+86400
+    for host in ('query1.finance.yahoo.com','query2.finance.yahoo.com'):
+        try:
+            url='https://'+host+'/v8/finance/chart/'+urllib.parse.quote(ticker)+'?period1=946684800&period2='+str(end)+'&interval=1d&events=history'
+            payload=json.loads(fetch(url))
+            items=payload.get('chart',{}).get('result') or []
+            if len(items)!=1: raise ValueError('Missing unique historical chart')
+            item=items[0]
+            meta=item.get('meta') or {}
+            if meta.get('symbol','').upper()!=ticker.upper(): raise ValueError('Historical ticker mismatch')
+            expected='SGD' if ticker.endswith('.SI') else 'USD'
+            if meta.get('currency')!=expected: raise ValueError('Historical currency mismatch')
+            stamps=item.get('timestamp') or []
+            quotes=item.get('indicators',{}).get('quote') or []
+            highs=quotes[0].get('high') if quotes else []
+            if not stamps or len(stamps)!=len(highs): raise ValueError('Historical timestamps/highs missing or unequal')
+            points=[(dt.datetime.fromtimestamp(ts,dt.timezone.utc).date(),high)
+                    for ts,high in zip(stamps,highs)
+                    if finite(ts) and finite(high) and high>0]
+            if not points: raise ValueError('No valid historical daily highs')
+            inception=meta.get('firstTradeDate')
+            start=max(dt.date(2000,1,1),dt.datetime.fromtimestamp(inception,dt.timezone.utc).date()) if finite(inception) else dt.date(2000,1,1)
+            oldest,newest=min(d for d,h in points),max(d for d,h in points)
+            if (oldest-start).days>10: raise ValueError('Historical chart does not reach inception or January 2000')
+            if (dt.datetime.now(dt.timezone.utc).date()-newest).days>10: raise ValueError('Historical chart is outdated')
+            if len(points)<max(1,(newest-oldest).days*0.55): raise ValueError('Historical chart daily highs incomplete')
+            return {'ath':max(h for d,h in points),'ath_retrieved_at':now(),
+                    'ath_error':None,'ath_source':'Yahoo individual ticker daily chart ('+host+')',
+                    'ath_history_start':oldest.isoformat(),'ath_history_end':newest.isoformat(),
+                    'ath_history_rows':len(points)}
+        except Exception as error: errors.append(host+': '+str(error))
+    raise ValueError('Yahoo individual ticker ATH chart failed: '+'; '.join(errors))
+
+def historical_high_verified(ticker):
+    """Original historical webpage first; verified individual-ticker chart if it fails."""
+    try: return historical_high(ticker)
+    except Exception as page_error:
+        try: return historical_high_chart(ticker)
+        except Exception as chart_error:
+            raise ValueError('Yahoo historical webpage failed: '+str(page_error)+'; '+str(chart_error))
+
 def previous_day_change(ticker,price_as_of):
     """Previous two completed sessions before the quote's market date."""
     from html import unescape
@@ -272,7 +317,7 @@ def retrieve(x,old,history=False):
         result['refresh_error']='Webpage scraping failed; retained saved price and timestamp. '+str(error)
     if history:
         try:
-            result.update(historical_high(x['ticker']))
+            result.update(historical_high_verified(x['ticker']))
             if finite(result.get('current_price')):
                 result['ath']=max(result['ath'],result['current_price'])
             result['drawdown_pct']=percentage(result.get('current_price'),result['ath'])
