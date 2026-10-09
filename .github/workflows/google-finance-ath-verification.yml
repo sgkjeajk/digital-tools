@@ -1,0 +1,50 @@
+name: Google Finance ATH evidence verification (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/google-finance-ath-verification.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Inspect Google Finance MAX historical coverage and high price evidence
+        run: |
+          python - <<'PY'
+          import json,re
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+            browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
+            for symbol in ('AAPL:NASDAQ','D05:SGX','SPY:NYSEARCA'):
+              page=browser.new_page(locale='en-US')
+              requests=[]
+              def onresponse(response):
+                u=response.url
+                if any(v in u for v in ('batchexecute','finance','historical','chart')):
+                  requests.append({'status':response.status,'url':u.split('?')[0][:170],'content_type':response.headers.get('content-type','')[:80]})
+              page.on('response',onresponse)
+              try:
+                resp=page.goto('https://www.google.com/finance/quote/'+symbol+'?hl=en',wait_until='domcontentloaded',timeout=25000)
+                page.wait_for_timeout(1600)
+                before=page.locator('body').inner_text()
+                maxbutton=page.get_by_text('MAX',exact=True)
+                maxcount=maxbutton.count()
+                if maxcount:
+                  maxbutton.first.click(timeout=5000)
+                  page.wait_for_timeout(2000)
+                after=page.locator('body').inner_text()
+                details={'symbol':symbol,'http':resp.status,'max_button_count':maxcount,'body_max_excerpt':after[max(0,after.find('1D')-100):after.find('1D')+260] if '1D' in after else after[:200],'max_high_labels':[x[:130] for x in re.findall(r'(?i).{0,35}(?:all.time high|52.week high|highest|historical).{0,75}',after)[:8]],'svg_count':page.locator('svg').count(),'svg_path_count':page.locator('svg path').count(),'network_sample':requests[-15:],'has_daily_ohlc_table':bool(re.search(r'(?i)Date\s+Open\s+High\s+Low\s+Close',after))}
+                print('ATH_EVIDENCE',json.dumps(details))
+              except Exception as e:print('ATH_ERROR',json.dumps({'symbol':symbol,'error':str(e)[:350]}))
+              finally:page.close()
+            browser.close()
+          PY
