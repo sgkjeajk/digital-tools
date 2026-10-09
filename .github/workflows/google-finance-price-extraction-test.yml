@@ -1,0 +1,108 @@
+name: Google Finance price extraction verification (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/google-finance-price-extraction-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch and validate actual price attributes for enabled tickers
+        shell: bash
+        run: |
+          python - <<'PY'
+          import datetime as dt, html, json, math, re, time, urllib.request
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          # Explicit exchange mapping; never infer exchange from a generic HTTP 200.
+          sgx={'ES3.SI','D05.SI','O39.SI','U11.SI'}
+          arca={'SPY','VOO','VTI','VUG'}
+          nyse={'SHEL'}
+          def mapping(ticker):
+              if ticker in sgx: return ticker[:-3], 'SGX', 'SGD'
+              if ticker in arca: return ticker, 'NYSEARCA', 'USD'
+              if ticker in nyse: return ticker, 'NYSE', 'USD'
+              return ticker, 'NASDAQ', 'USD'
+
+          class QuoteParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.canonicals=[]
+                  self.quotes=[]
+                  self.title_depth=0
+                  self.titles=[]
+              def handle_starttag(self, tag, attrs):
+                  d=dict(attrs)
+                  if tag=='link' and 'canonical' in d.get('rel','').lower().split():
+                      self.canonicals.append(d.get('href',''))
+                  if 'data-last-price' in d:
+                      self.quotes.append({k:d.get(k) for k in ('data-last-price','data-exchange','data-currency-code','data-last-normal-market-timestamp')})
+                  if tag=='title': self.title_depth+=1
+              def handle_endtag(self,tag):
+                  if tag=='title': self.title_depth=max(0,self.title_depth-1)
+              def handle_data(self,data):
+                  if self.title_depth: self.titles.append(data)
+
+          instruments=json.loads(Path('data/stock-tickers.json').read_text())['instruments']
+          enabled=[i['ticker'] for i in instruments if i.get('enabled')]
+          print('PRICE_EXTRACTION_DIAGNOSTIC_START',json.dumps({'enabled_tickers':len(enabled),'utc':dt.datetime.now(dt.timezone.utc).isoformat()}))
+          passed=0
+          for ticker in enabled:
+              sym,ex,currency=mapping(ticker)
+              target=f'{sym}:{ex}'
+              url='https://www.google.com/finance/quote/'+target+'?hl=en'
+              record={'ticker':ticker,'symbol':target}
+              try:
+                  req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept-Language':'en-US,en;q=0.9'})
+                  with urllib.request.urlopen(req,timeout=15) as resp:
+                      body=resp.read(2_000_001).decode('utf-8','replace')
+                      record['http_status']=resp.status
+                  if len(body)>2_000_000: raise ValueError('HTML exceeded 2MB cap')
+                  parser=QuoteParser()
+                  parser.feed(body)
+                  record['page_title']=' '.join(parser.titles)[:90]
+                  record['canonical']=parser.canonicals[:2]
+                  record['price_attribute_blocks']=len(parser.quotes)
+                  # Only accept a unique matching quote with complete structured attributes.
+                  matched=[]
+                  for q in parser.quotes:
+                      if q.get('data-exchange','').upper()!=ex: continue
+                      if q.get('data-currency-code','').upper()!=currency: continue
+                      try:
+                          price=float(q['data-last-price'])
+                          timestamp=float(q['data-last-normal-market-timestamp'])
+                          if not (math.isfinite(price) and price>0 and math.isfinite(timestamp)): continue
+                          age_hours=(time.time()-timestamp)/3600
+                          if age_hours < -0.0834 or age_hours > 168: continue
+                          matched.append({'price':price,'currency':currency,'quote_timestamp_utc':dt.datetime.fromtimestamp(timestamp,dt.timezone.utc).isoformat(),'age_hours':round(age_hours,2)})
+                      except (ValueError,TypeError,OverflowError,KeyError): continue
+                  # Canonical must identify the intended security; do not trust a generic search page.
+                  canon_ok=any('/quote/'+target in c.split('?')[0] for c in parser.canonicals)
+                  record['canonical_verified']=canon_ok
+                  record['valid_quote_count']=len(matched)
+                  if canon_ok and len(matched)==1:
+                      record.update(matched[0]);record['result']='PASS';passed+=1
+                  else:
+                      record['result']='FAIL'
+                      record['reason']='missing/ambiguous price attributes or incorrect canonical'
+                      record['attribute_sample']=parser.quotes[:1]
+              except Exception as exc:
+                  record['result']='FAIL'
+                  record['reason']=str(exc)[:180]
+              print('PRICE_EXTRACTION_RESULT',json.dumps(record,ensure_ascii=True))
+              time.sleep(0.35)
+          print('PRICE_EXTRACTION_SUMMARY',json.dumps({'passed':passed,'total':len(enabled),'failed':len(enabled)-passed,'production_backup_enabled':False}))
+          if passed!=len(enabled):
+              raise SystemExit('Diagnostic incomplete: some quotes not verified; production unchanged')
+          PY
