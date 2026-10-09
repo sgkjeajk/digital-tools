@@ -1,0 +1,45 @@
+name: Google Finance fallback live verification (manual only)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check public Google Finance HTML for configured tickers (read-only)
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, re, urllib.request, urllib.parse, html, time
+          from pathlib import Path
+          cfg=json.loads(Path('data/stock-tickers.json').read_text())
+          rows=cfg.get('instruments',cfg.get('tickers',[]))
+          def google_symbol(t):
+              if t.endswith('.SI'): return t[:-3]+':SGX'
+              # US exchange is not guaranteed by ticker alone; try known US exchanges for diagnostics only.
+              return t+':NASDAQ'
+          print('This is a diagnostic connectivity test, NOT validated price extraction.')
+          for row in rows:
+              if not row.get('enabled'): continue
+              ticker=row['ticker']; sym=google_symbol(ticker)
+              url='https://www.google.com/finance/quote/'+urllib.parse.quote(sym,safe=':')+'?hl=en'
+              try:
+                  req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 (compatible; price-check/1.0)','Accept-Language':'en-US,en;q=0.9'})
+                  with urllib.request.urlopen(req,timeout=12) as resp:
+                      body=resp.read(2_000_000).decode('utf-8','replace')
+                      status=resp.status
+                  title=re.search(r'<title[^>]*>(.*?)</title>',body,re.I|re.S)
+                  title=html.unescape(re.sub('<[^>]+>','',title.group(1))).strip() if title else '(missing)'
+                  print(json.dumps({'ticker':ticker,'attempted_symbol':sym,'http':status,'bytes':len(body),'title':title[:120],'note':'NOT price validated'}))
+              except Exception as exc:
+                  print(json.dumps({'ticker':ticker,'attempted_symbol':sym,'error':str(exc)[:180]}))
+              time.sleep(0.5)
+          PY
