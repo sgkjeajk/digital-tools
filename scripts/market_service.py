@@ -180,8 +180,8 @@ def previous_day_change(ticker,price_as_of):
         try:
             text=fetch('https://'+host+'/quote/'+urllib.parse.quote(ticker)+'/history/?period1='+str(end-60*86400)+'&period2='+str(end))
             rows=[]
-            for tr in re.findall(r'<tr\\b[^>]*>(.*?)</tr>',text,re.S):
-                cells=[unescape(re.sub(r'<[^>]+>','',v)).strip() for v in re.findall(r'<td\\b[^>]*>(.*?)</td>',tr,re.S)]
+            for tr in re.findall(r'<tr\b[^>]*>(.*?)</tr>',text,re.S):
+                cells=[unescape(re.sub(r'<[^>]+>','',v)).strip() for v in re.findall(r'<td\b[^>]*>(.*?)</td>',tr,re.S)]
                 if len(cells)!=7: continue
                 try:
                     rows.append((dt.datetime.strptime(cells[0],'%b %d, %Y').date(),float(cells[4].replace(',',''))))
