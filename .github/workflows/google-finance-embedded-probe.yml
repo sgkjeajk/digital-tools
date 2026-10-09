@@ -1,0 +1,35 @@
+name: Google Finance embedded quote probe (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/google-finance-embedded-probe.yml'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect safe snippets of live embedded HTML data
+        run: |
+          python - <<'PY'
+          import re, json, urllib.request, html
+          from html.parser import HTMLParser
+          class Meta(HTMLParser):
+              def __init__(self):super().__init__();self.items=[]
+              def handle_starttag(self,t,a):
+                  d=dict(a)
+                  if t=='meta' and (d.get('property','').startswith('og:') or d.get('name','') in ('description','twitter:description')):self.items.append({k:d.get(k) for k in ('property','name','content')})
+          for sym in ('AAPL:NASDAQ','D05:SGX'):
+              req=urllib.request.Request('https://www.google.com/finance/quote/'+sym+'?hl=en',headers={'User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=15) as f:body=f.read(2_000_000).decode('utf-8','replace')
+              p=Meta();p.feed(body)
+              print('EMBEDDED_META',json.dumps({'symbol':sym,'metas':p.items[:12],'script_count':len(re.findall(r'<script',body,re.I))}))
+              for term in ('Price & News','price','quote','lastPrice','marketPrice','currentPrice','data-','\"price\"','SGD','USD'):
+                  m=re.search(re.escape(term),body,re.I)
+                  if m:
+                      s=body[max(0,m.start()-110):m.start()+190]
+                      s=re.sub(r'[A-Za-z0-9+/]{300,}','[large-encoded-value]',s)
+                      print('EMBEDDED_SNIPPET',json.dumps({'symbol':sym,'term':term,'snippet':s[:300]}))
+          PY
