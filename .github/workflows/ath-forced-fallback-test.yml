@@ -1,0 +1,52 @@
+name: ATH forced fallback integration test (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ath-forced-fallback-test.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Force webpage failure and verify chart fallback for all enabled tickers
+        run: |
+          python - <<'PY'
+          import json,sys
+          from unittest.mock import patch
+          sys.path.insert(0,'scripts')
+          import market_service as m
+          cfg=m.read_config()
+          tickers=[x['ticker'] for x in cfg['instruments'] if x['enabled']]
+          passed=0
+          def fail(*args,**kwargs):raise RuntimeError('CONTROLLED PRIMARY WEBPAGE FAILURE')
+          with patch.object(m,'historical_high',side_effect=fail):
+            for ticker in tickers:
+              try:
+                result=m.historical_high_verified(ticker)
+                assert result['ath']>0 and result['ath_history_rows']>100
+                assert result['ath_source'].startswith('Yahoo individual ticker daily chart')
+                assert result['ath_history_start'] and result['ath_history_end']
+                passed+=1
+                print('FORCED_ATH_FALLBACK',json.dumps({'ticker':ticker,'passed':True,'source':result['ath_source'],'rows':result['ath_history_rows'],'ath':result['ath'],'start':result['ath_history_start'],'end':result['ath_history_end']}),flush=True)
+              except Exception as exc:
+                print('FORCED_ATH_FALLBACK',json.dumps({'ticker':ticker,'passed':False,'error':str(exc)}),flush=True)
+          print('FORCED_ATH_FALLBACK_SUMMARY',json.dumps({'passed':passed,'total':len(tickers),'production_unchanged':True}),flush=True)
+          if passed!=len(tickers):raise SystemExit(1)
+          # Exercise the actual retrieve() failure path without writing a market snapshot.
+          x=next(x for x in cfg['instruments'] if x['enabled'])
+          old={'ticker':x['ticker'],'ath':1234567.0,'ath_retrieved_at':'2026-01-01T00:00:00Z',
+               'current_price':100.0,'price_as_of':'2026-01-01T00:00:00Z'}
+          with patch.object(m,'historical_high',side_effect=fail),patch.object(m,'historical_high_chart',side_effect=fail),patch.object(m,'quote',side_effect=fail):
+            row=m.retrieve(x,old,history=True)
+          assert row['ath']==old['ath'] and row['ath_retrieved_at']==old['ath_retrieved_at']
+          assert row['current_price']==old['current_price'] and row['price_as_of']==old['price_as_of']
+          assert 'saved ATH and timestamp retained' in row['ath_error']
+          print('DUAL_FAILURE_RETENTION',json.dumps({'passed':True,'ath_preserved':True,'ath_timestamp_preserved':True,'price_preserved':True,'price_timestamp_preserved':True,'production_unchanged':True}),flush=True)
+          PY
