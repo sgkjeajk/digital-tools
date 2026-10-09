@@ -48,10 +48,10 @@ jobs:
                       result['candidate_elements']=candidates[:12]
                       # Inspect first 900 chars of the body only, to avoid mistaking comparison tables for the quote.
                       head=body[:900]
-                      price_candidates=re.findall(r'(?:S\\$|\\$|US\\$)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,4})?)',head)
+                      price_candidates=re.findall(r'(?:S\$|\$|US\$)\s*([0-9][0-9,]*(?:\.[0-9]{1,4})?)',head)
                       result['headline_price_candidates']=price_candidates[:8]
                       # Do not report a verified price without exact page identity and a single main quote element.
-                      main=[x for x in candidates if x['selector'] in ('.YMlKec.fxKbKc','.fxKbKc','.YMlKec','.AHmHk') and re.fullmatch(r'\\s*(?:S\\$|US\\$|\\$)?\\s*[0-9][0-9,]*(?:\\.[0-9]{1,4})?\\s*',x['text'])]
+                      main=[x for x in candidates if x['selector'] in ('.YMlKec.fxKbKc','.fxKbKc','.YMlKec','.AHmHk') and re.fullmatch(r'\s*(?:S\$|US\$|\$)?\s*[0-9][0-9,]*(?:\.[0-9]{1,4})?\s*',x['text'])]
                       values={float(re.sub(r'[^0-9.]','',x['text'])) for x in main}
                       if canonical.rstrip('/')==f'https://www.google.com/finance/quote/{symbol}' and currency in head and len(values)==1 and next(iter(values))>0:
                           result['verified']=True;result['price']=next(iter(values));ok+=1
