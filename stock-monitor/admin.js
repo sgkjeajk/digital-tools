@@ -17,6 +17,7 @@ function compareDisplay(a,b){
  return (displaySortDirection==='asc'?primary:-primary)||a.ticker.localeCompare(b.ticker,'en');
 }
 function refreshSortHeaders(){
+ $('listNote').textContent=displaySortKey?('Sorted by '+(displaySortKey==='ticker'?'Ticker':'Region / Market')+' '+(displaySortDirection==='asc'?'A–Z':'Z–A')+' · display only'):'ETF first, then Stock · Ticker A–Z';
  for(const th of document.querySelectorAll('th[data-sort-key]')){
   const selected=th.dataset.sortKey===displaySortKey;
   th.setAttribute('aria-sort',selected?(displaySortDirection==='asc'?'ascending':'descending'):'none');
