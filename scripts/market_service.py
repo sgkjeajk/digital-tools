@@ -155,28 +155,62 @@ def historical_high(ticker):
     raise last
 
 def previous_day_change(ticker,price_as_of):
+    """Previous two completed sessions before the quote's market date."""
     from html import unescape
     from zoneinfo import ZoneInfo
-    market_date=dt.datetime.fromisoformat(price_as_of).astimezone(ZoneInfo('Asia/Singapore' if ticker.endswith('.SI') else 'America/New_York')).date()
+    zone=ZoneInfo('Asia/Singapore' if ticker.endswith('.SI') else 'America/New_York')
+    market_date=dt.datetime.fromisoformat(price_as_of).astimezone(zone).date()
     end=int(dt.datetime.now(dt.timezone.utc).timestamp())
+    errors=[]
+
+    def validated(rows,source):
+        # Never infer a closing price from the live quote or a different symbol.
+        closes=sorted({d:v for d,v in rows if d<market_date and finite(v) and v>0}.items(),reverse=True)
+        if len(closes)<2:
+            raise ValueError('Fewer than two verified completed sessions')
+        (recent,latest),(earlier,previous)=closes[:2]
+        return {'prev_day_pct_change':percentage(latest,previous),
+                'prev_day_change_as_of':recent.isoformat(),
+                'prev_day_change_retrieved_at':now(),
+                'prev_day_change_source':source,
+                'prev_day_change_error':None}
+
     hosts=('sg.finance.yahoo.com','finance.yahoo.com','uk.finance.yahoo.com') if ticker.endswith('.SI') else ('finance.yahoo.com','sg.finance.yahoo.com')
     for host in hosts:
         try:
             text=fetch('https://'+host+'/quote/'+urllib.parse.quote(ticker)+'/history/?period1='+str(end-60*86400)+'&period2='+str(end))
             rows=[]
-            for tr in re.findall(r'<tr\b[^>]*>(.*?)</tr>',text,re.S):
-                cells=[unescape(re.sub(r'<[^>]+>','',v)).strip() for v in re.findall(r'<td\b[^>]*>(.*?)</td>',tr,re.S)]
+            for tr in re.findall(r'<tr\\b[^>]*>(.*?)</tr>',text,re.S):
+                cells=[unescape(re.sub(r'<[^>]+>','',v)).strip() for v in re.findall(r'<td\\b[^>]*>(.*?)</td>',tr,re.S)]
                 if len(cells)!=7: continue
                 try:
-                    date=dt.datetime.strptime(cells[0],'%b %d, %Y').date()
-                    close=float(cells[4].replace(',',''))
-                    if date<market_date and finite(close) and close>0: rows.append((date,close))
+                    rows.append((dt.datetime.strptime(cells[0],'%b %d, %Y').date(),float(cells[4].replace(',',''))))
                 except ValueError: continue
-            rows=sorted(dict(rows).items(),reverse=True)
-            if len(rows)<2: raise ValueError('Two completed previous trading-day closes unavailable')
-            return {'prev_day_pct_change':percentage(rows[0][1],rows[1][1]),'prev_day_change_as_of':rows[0][0].isoformat(),'prev_day_change_retrieved_at':now(),'prev_day_change_error':None}
-        except Exception as error: last=error
-    raise last
+            return validated(rows,'Yahoo Finance historical webpage')
+        except Exception as error:
+            errors.append(str(error))
+
+    # Yahoo chart is a separate historical-data route, not the quote's previous close.
+    # It is unofficial and may itself be unavailable or rate-limited.
+    for host in ('query2.finance.yahoo.com','query1.finance.yahoo.com'):
+        try:
+            url='https://'+host+'/v8/finance/chart/'+urllib.parse.quote(ticker)+'?range=3mo&interval=1d'
+            payload=json.loads(fetch(url))
+            results=payload.get('chart',{}).get('result') or []
+            if len(results)!=1 or results[0].get('meta',{}).get('symbol','').upper()!=ticker.upper():
+                raise ValueError('Historical chart symbol mismatch')
+            chart=results[0]
+            stamps=chart.get('timestamp') or []
+            quotes=chart.get('indicators',{}).get('quote') or []
+            closes=quotes[0].get('close',[]) if quotes else []
+            if len(stamps)!=len(closes):
+                raise ValueError('Historical chart timestamps and closes differ')
+            rows=[(dt.datetime.fromtimestamp(ts,dt.timezone.utc).astimezone(zone).date(),close)
+                  for ts,close in zip(stamps,closes) if isinstance(ts,(int,float))]
+            return validated(rows,'Yahoo Finance daily chart ('+host+')')
+        except Exception as error:
+            errors.append(str(error))
+    raise ValueError('Historical closes unavailable across Yahoo sources: '+'; '.join(errors[-3:]))
 
 def retrieve(x,old,history=False):
     result={**old,**x}
@@ -185,8 +219,10 @@ def retrieve(x,old,history=False):
         result['refresh_error']=None
         try: result.update(previous_day_change(x['ticker'],result['price_as_of']))
         except Exception as error:
-            result['prev_day_pct_change']=None
-            result['prev_day_change_error']='Previous trading-day change unavailable: '+str(error)
+            # Preserve the last verified value and its original as-of timestamp.
+            if not finite(result.get('prev_day_pct_change')):
+                result['prev_day_pct_change']=None
+            result['prev_day_change_error']='Previous trading-day change unavailable; saved value (if any) is stale: '+str(error)
         # Price-only runs preserve historical data and its original timestamp.
         if finite(result.get('ath')):
             if result['current_price']>result['ath']:
