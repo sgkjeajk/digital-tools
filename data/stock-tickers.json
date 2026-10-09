@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 8,
+  "revision": 9,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-09T13:39:23.049Z",
+  "saved_at": "2026-10-09T13:39:58.512Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -115,6 +115,14 @@
       "region": "United States",
       "type": "Stock",
       "metadata_source": "Nasdaq directory · 6 Oct 2026"
+    },
+    {
+      "ticker": "O39.SI",
+      "enabled": true,
+      "name": "Oversea-Chinese Banking Corporation Ltd",
+      "region": "Singapore",
+      "type": "Stock",
+      "metadata_source": "SGX reference · 7 Oct 2026"
     },
     {
       "ticker": "SHEL",
