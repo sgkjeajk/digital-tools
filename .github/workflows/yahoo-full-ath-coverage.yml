@@ -1,0 +1,52 @@
+name: Yahoo full daily ATH coverage verification (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/yahoo-full-ath-coverage.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify complete daily high series for every configured ticker
+        run: |
+          python - <<'PY'
+          import json,datetime as dt,urllib.request,urllib.parse,time,math
+          cfg=json.load(open('data/stock-tickers.json'))
+          tickers=[x['ticker'] for x in cfg['instruments'] if x['enabled']]
+          results=[]
+          for ticker in tickers:
+            result={'ticker':ticker,'passed':False}
+            for host in ('query1.finance.yahoo.com','query2.finance.yahoo.com'):
+              try:
+                url='https://'+host+'/v8/finance/chart/'+urllib.parse.quote(ticker)+'?period1=946684800&period2='+str(int(time.time())+86400)+'&interval=1d&events=history'
+                req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'})
+                with urllib.request.urlopen(req,timeout=18) as resp:data=json.load(resp)
+                items=data.get('chart',{}).get('result') or []
+                if len(items)!=1 or items[0].get('meta',{}).get('symbol','').upper()!=ticker:raise ValueError('Exact symbol mismatch')
+                item=items[0];stamps=item.get('timestamp') or [];quotes=item.get('indicators',{}).get('quote') or []
+                highs=quotes[0].get('high') if quotes else []
+                if not highs or len(stamps)!=len(highs):raise ValueError('No matched daily high series')
+                points=[(dt.datetime.fromtimestamp(ts,dt.timezone.utc).date(),v) for ts,v in zip(stamps,highs) if isinstance(v,(int,float)) and math.isfinite(v) and v>0]
+                if not points:raise ValueError('No valid highs')
+                dates=[d for d,v in points]
+                first=min(dates);last=max(dates);span=(last-first).days
+                first_trade=item.get('meta',{}).get('firstTradeDate')
+                inception=dt.datetime.fromtimestamp(first_trade,dt.timezone.utc).date() if isinstance(first_trade,(int,float)) else None
+                required=max(dt.date(2000,1,1),inception) if inception else dt.date(2000,1,1)
+                coverage=(first-required).days<=10 and (dt.datetime.now(dt.timezone.utc).date()-last).days<=10 and len(points)>=max(1,span*0.55)
+                result.update({'host':host,'first':str(first),'last':str(last),'inception':str(inception),'required_start':str(required),'rows':len(points),'daily_high_max':max(v for d,v in points),'currency':item.get('meta',{}).get('currency'),'passed':coverage,'coverage_gap_days':(first-required).days})
+                break
+              except Exception as e:result['error']=str(e)[:170]
+            print('ATH_COVERAGE',json.dumps(result));results.append(result)
+          passed=sum(x['passed'] for x in results)
+          print('ATH_COVERAGE_SUMMARY',json.dumps({'passed':passed,'total':len(results),'failed':len(results)-passed,'production_unchanged':True}))
+          if passed!=len(results):raise SystemExit(1)
+          PY
