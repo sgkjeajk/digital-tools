@@ -30,7 +30,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: stock-etf-monitor-update
+  group: stock-etf-monitor-${{ github.event_name == 'workflow_dispatch' && inputs.lookupTicker != '' && 'lookup' || 'update' }}
   cancel-in-progress: false
 jobs:
   update:
