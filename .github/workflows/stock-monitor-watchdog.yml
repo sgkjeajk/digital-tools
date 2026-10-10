@@ -24,18 +24,25 @@ jobs:
         env:
           TRIGGER_EVENT: schedule
           REFRESH_ATH: false
-        run: python scripts/github_market_update.py
-      - name: Commit heartbeat without overwriting a newer ticker list
         run: |
-          git fetch origin main
-          if [ "$(git rev-parse HEAD:data/stock-tickers.json)" != "$(git rev-parse origin/main:data/stock-tickers.json)" ]; then
-            echo 'A newer configuration exists; its queued update will handle prices.'
-            exit 0
-          fi
-          git add market-data.json data/stock-monitor.json
-          if git diff --cached --quiet; then exit 0; fi
+          run_count=5
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Update Stock Monitor watchdog heartbeat'
-          git pull --rebase origin main
-          git push origin HEAD:main
+          for attempt in $(seq 1 "$run_count"); do
+            echo "Stock monitor watchdog checker cycle $attempt of $run_count"
+            python scripts/github_market_update.py
+            git fetch origin main
+            if [ "$(git rev-parse HEAD:data/stock-tickers.json)" != "$(git rev-parse origin/main:data/stock-tickers.json)" ]; then
+              echo 'A newer configuration exists; its queued update will handle prices.'
+              exit 0
+            fi
+            git add market-data.json data/stock-monitor.json
+            if ! git diff --cached --quiet; then
+              git commit -m 'Update Stock Monitor watchdog heartbeat'
+              git pull --rebase origin main
+              git push origin HEAD:main
+            fi
+            if [ "$attempt" -lt "$run_count" ]; then
+              sleep 360
+            fi
+          done
