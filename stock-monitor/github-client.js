@@ -2,6 +2,7 @@
 // Credentials remain inside this closure and are never written to browser storage.
 window.ECGitHub=(()=>{
  const repo='sgkjeajk/digital-tools',branch='main',base='https://api.github.com/repos/'+repo;
+ const MAX_TICKERS=50;
  let credential='';const catalogs=new Map();
  const headers=(extra={})=>({...extra,'X-GitHub-Api-Version':'2022-11-28',...(credential?{Authorization:'Bearer '+credential}:{})});
  async function request(path,options={}){
@@ -23,7 +24,7 @@ window.ECGitHub=(()=>{
  }
  async function save(input,items){
   if(!credential)throw Error('Connect GitHub to save a shared configuration. Nothing was saved.');
-  if(items.length>20)throw Error('Maximum 20 tickers.');const seen=new Set();
+  if(items.length>MAX_TICKERS)throw Error('Maximum '+MAX_TICKERS+' tickers.');const seen=new Set();
   const instruments=items.map(x=>{const ticker=normalise(x.ticker);if(seen.has(ticker))throw Error('Duplicate ticker: '+ticker);seen.add(ticker);if(typeof x.enabled!=='boolean'||!['ETF','Stock'].includes(x.type)||!x.name||!x.market)throw Error('Verify every ticker before saving.');return {ticker,enabled:x.enabled,name:x.name,region:x.market,type:x.type,metadata_source:x.source||x.metadata_source};}).sort((a,b)=>(a.type==='ETF'?0:1)-(b.type==='ETF'?0:1)||a.ticker.localeCompare(b.ticker));
   const interval=input.refreshIntervalMinutes;if(![5,10,15,30,60].includes(interval))throw Error('Invalid refresh interval.');
   const latest=await file('data/stock-tickers.json');if((latest.data.revision||0)!==input.revision)throw Error('Another save changed the configuration. Reload before saving your draft.');

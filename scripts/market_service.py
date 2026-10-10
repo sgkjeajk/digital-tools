@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK = threading.RLock()
 UA = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json,text/html'}
 CATALOG = {}
+MAX_TICKERS = 50
 for directory_file in (ROOT/'data/symbol-directory').glob('*.json'):
     CATALOG.update(json.loads(directory_file.read_text(encoding='utf-8')))
 
@@ -61,7 +62,7 @@ def lookup(ticker):
 def validate(data):
     if not isinstance(data,dict) or data.get('version',1)!=1: raise ValueError('Unsupported configuration.')
     entries=data.get('tickers',data.get('instruments'))
-    if not isinstance(entries,list) or len(entries)>20: raise ValueError('Expected at most 20 tickers.')
+    if not isinstance(entries,list) or len(entries)>MAX_TICKERS: raise ValueError('Expected at most '+str(MAX_TICKERS)+' tickers.')
     interval=data.get('refreshIntervalMinutes',15)
     if type(interval)!=int or interval not in (5,10,15,30,60): raise ValueError('Invalid refresh interval.')
     seen=set(); result=[]
