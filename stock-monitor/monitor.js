@@ -37,7 +37,7 @@ function render(cfg,data){
  sortTable('ETF');sortTable('Stock');
  const latestPriceTime=successful.sort().at(-1)||active.map(x=>prices.get(x.ticker)?.price_retrieved_at).filter(Boolean).sort().at(-1);
  $('reference-time').textContent=sg(data.last_check_completed_at||data.generated_at||latestPriceTime);$('tracked').textContent=active.length+' instruments';
- clearInterval(interval);interval=setInterval(()=>refresh(false),Math.max(5,cfg.refreshIntervalMinutes||15)*60000);
+ clearInterval(interval);interval=setInterval(()=>refresh(false),Math.max(5,Math.min(10,cfg.refreshIntervalMinutes||10))*60000);
  return active.map(x=>prices.get(x.ticker)||{});
 }
 async function load(){const [cfg,data]=await Promise.all([get('../data/stock-tickers.json'),get('../market-data.json')]);return render(cfg,data);}
