@@ -1,0 +1,79 @@
+name: Stock ETF Monitor Watchdog
+on:
+  schedule:
+    - cron: '1-56/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: stock-etf-watchdog
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check primary workflow and recover when overdue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import urllib.request
+
+          repo = os.environ["GH_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          base = f"https://api.github.com/repos/{repo}"
+          now = dt.datetime.now(dt.timezone.utc)
+
+          def request(path, data=None):
+              headers = {
+                  "Authorization": f"Bearer {token}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "User-Agent": "stock-etf-watchdog",
+              }
+              if data is not None:
+                  headers["Content-Type"] = "application/json"
+              req = urllib.request.Request(
+                  base + path,
+                  headers=headers,
+                  data=json.dumps(data).encode() if data is not None else None,
+                  method="POST" if data is not None else "GET",
+              )
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  body = response.read()
+                  return json.loads(body) if body else {}
+
+          def timestamp(value):
+              return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+          # Consider scheduled, manually dispatched and push-triggered monitor runs.
+          runs = request("/actions/workflows/stock-monitor.yml/runs?per_page=30")["workflow_runs"]
+          if not runs:
+              print("No monitor runs found; requesting recovery.")
+          else:
+              latest = max(runs, key=lambda r: r["created_at"])
+              age = (now - timestamp(latest["created_at"])).total_seconds() / 60
+              print(f"Latest monitor run: {latest['created_at']} ({latest['status']}, {latest['conclusion']}); age={age:.1f}m")
+              if latest["status"] in ("queued", "in_progress", "waiting", "requested", "pending"):
+                  print("Monitor is already active; no duplicate recovery.")
+                  raise SystemExit(0)
+              if age < 12:
+                  print("Monitor recently started; no recovery needed.")
+                  raise SystemExit(0)
+
+          # A new dispatch is suppressed until at least 12 minutes after any
+          # previous run began, limiting repeated recovery requests.
+          print("Monitor overdue; dispatching a recovery run.")
+          request("/actions/workflows/stock-monitor.yml/dispatches",
+                  {"ref": "main", "inputs": {"lookupTicker": "", "requestId": ""}})
+          print("Recovery dispatch accepted. Completion must be checked in Actions.")
+          PY
