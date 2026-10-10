@@ -1,0 +1,11 @@
+{
+  "request_id": "ee1d89a5-2f0a-44e1-ad64-bca60cfc28eb",
+  "generated_at": "2026-10-10T08:33:32.173291Z",
+  "instrument": {
+    "ticker": "0005.HK",
+    "name": "HSBC Holdings plc",
+    "region": "HKSE",
+    "type": "Stock",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
