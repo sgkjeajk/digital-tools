@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 13,
+  "revision": 14,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-10T08:14:07.188Z",
+  "saved_at": "2026-10-10T08:15:09.699Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -40,6 +40,14 @@
       "ticker": "VOO",
       "enabled": true,
       "name": "Vanguard S&P 500 ETF",
+      "region": "United States",
+      "type": "ETF",
+      "metadata_source": "Nasdaq directory · 6 Oct 2026"
+    },
+    {
+      "ticker": "VTI",
+      "enabled": true,
+      "name": "Vanguard Morningstar Total Stock Market ETF",
       "region": "United States",
       "type": "ETF",
       "metadata_source": "Nasdaq directory · 6 Oct 2026"
