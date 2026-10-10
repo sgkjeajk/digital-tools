@@ -25,7 +25,7 @@ jobs:
           TRIGGER_EVENT: schedule
           REFRESH_ATH: false
         run: |
-          run_count=15
+          run_count=30
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           for attempt in $(seq 1 "$run_count"); do
