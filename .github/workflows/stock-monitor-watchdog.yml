@@ -1,79 +1,41 @@
-name: Stock ETF Monitor Watchdog
+name: Stock Monitor Watchdog
 on:
   schedule:
-    - cron: '1-56/5 * * * *'
+    # Backup schedule for the main updater. GitHub schedules are best effort,
+    # so this independent workflow gives the heartbeat another chance to run.
+    - cron: '*/5 * * * *'
   workflow_dispatch:
-
 permissions:
-  actions: write
-  contents: read
-
+  contents: write
 concurrency:
-  group: stock-etf-watchdog
+  group: stock-etf-monitor-update
   cancel-in-progress: false
-
 jobs:
-  recover:
+  update:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - name: Check primary workflow and recover when overdue
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run scheduled stock monitor heartbeat
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPOSITORY: ${{ github.repository }}
+          TRIGGER_EVENT: schedule
+          REFRESH_ATH: false
+        run: python scripts/github_market_update.py
+      - name: Commit heartbeat without overwriting a newer ticker list
         run: |
-          python - <<'PY'
-          import datetime as dt
-          import json
-          import os
-          import urllib.request
-
-          repo = os.environ["GH_REPOSITORY"]
-          token = os.environ["GH_TOKEN"]
-          base = f"https://api.github.com/repos/{repo}"
-          now = dt.datetime.now(dt.timezone.utc)
-
-          def request(path, data=None):
-              headers = {
-                  "Authorization": f"Bearer {token}",
-                  "Accept": "application/vnd.github+json",
-                  "X-GitHub-Api-Version": "2022-11-28",
-                  "User-Agent": "stock-etf-watchdog",
-              }
-              if data is not None:
-                  headers["Content-Type"] = "application/json"
-              req = urllib.request.Request(
-                  base + path,
-                  headers=headers,
-                  data=json.dumps(data).encode() if data is not None else None,
-                  method="POST" if data is not None else "GET",
-              )
-              with urllib.request.urlopen(req, timeout=20) as response:
-                  body = response.read()
-                  return json.loads(body) if body else {}
-
-          def timestamp(value):
-              return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
-
-          # Consider scheduled, manually dispatched and push-triggered monitor runs.
-          runs = request("/actions/workflows/stock-monitor.yml/runs?per_page=30")["workflow_runs"]
-          if not runs:
-              print("No monitor runs found; requesting recovery.")
-          else:
-              latest = max(runs, key=lambda r: r["created_at"])
-              age = (now - timestamp(latest["created_at"])).total_seconds() / 60
-              print(f"Latest monitor run: {latest['created_at']} ({latest['status']}, {latest['conclusion']}); age={age:.1f}m")
-              if latest["status"] in ("queued", "in_progress", "waiting", "requested", "pending"):
-                  print("Monitor is already active; no duplicate recovery.")
-                  raise SystemExit(0)
-              if latest["conclusion"] != "failure" and age < 7:
-                  print("Monitor recently started successfully; no recovery needed.")
-                  raise SystemExit(0)
-
-          # A new dispatch is suppressed until at least 7 minutes after any
-          # previous run began, limiting repeated recovery requests.
-          print("Monitor overdue; dispatching a recovery run.")
-          request("/actions/workflows/stock-monitor.yml/dispatches",
-                  {"ref": "main", "inputs": {"lookupTicker": "", "requestId": ""}})
-          print("Recovery dispatch accepted. Completion must be checked in Actions.")
-          PY
+          git fetch origin main
+          if [ "$(git rev-parse HEAD:data/stock-tickers.json)" != "$(git rev-parse origin/main:data/stock-tickers.json)" ]; then
+            echo 'A newer configuration exists; its queued update will handle prices.'
+            exit 0
+          fi
+          git add market-data.json data/stock-monitor.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update Stock Monitor watchdog heartbeat'
+          git pull --rebase origin main
+          git push origin HEAD:main
