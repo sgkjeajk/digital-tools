@@ -20,6 +20,26 @@ def prices_are_fresh(config, data, at=None, eligible=None):
         except (KeyError,ValueError,TypeError): return False
     return True
 
+def write_check_heartbeat(config, status, request_id='', history=False):
+    try:
+        data=json.loads((ROOT/'market-data.json').read_text(encoding='utf-8'))
+    except (OSError,ValueError):
+        data={}
+    stamp=now()
+    data.setdefault('ath_since','2000-01-01')
+    data.setdefault('instruments',[])
+    data.setdefault('source','Yahoo Finance; per-row timestamps and errors apply')
+    data['generated_at']=stamp
+    data['last_check_completed_at']=stamp
+    data['last_check_status']=status
+    data['config_revision']=config.get('revision',data.get('config_revision',0))
+    data['request_id']=request_id
+    data['workflow_run']=os.environ.get('GITHUB_RUN_ID')
+    data['ath_refresh_requested']=history
+    atomic(ROOT/'market-data.json',data)
+    atomic(ROOT/'data/stock-monitor.json',data)
+    return data
+
 if __name__=='__main__':
     ticker=os.environ.get('LOOKUP_TICKER','').strip()
     request_id=os.environ.get('REQUEST_ID','')
@@ -38,13 +58,15 @@ if __name__=='__main__':
             at=dt.datetime.now(dt.timezone.utc)
             eligible={x['ticker'] for x in config['instruments'] if x['enabled'] and market_open(x['ticker'],at)}
             if not eligible:
+                write_check_heartbeat(config,'skipped_market_closed',request_id,history)
                 print('Skipped scheduled quote scraping: neither SGX nor US regular market is open.')
                 raise SystemExit(0)
             try: saved=json.loads((ROOT/'market-data.json').read_text(encoding='utf-8'))
             except (OSError,ValueError): saved={}
             if prices_are_fresh(config,saved,at,eligible):
+                write_check_heartbeat(config,'skipped_recent_prices_fresh',request_id,history)
                 print('Skipped scraping: all open-market prices were successfully retrieved less than 5 minutes ago.')
                 raise SystemExit(0)
-        data=refresh(history=history,eligible_tickers=eligible);data['request_id']=request_id;data['workflow_run']=os.environ.get('GITHUB_RUN_ID');data['ath_refresh_requested']=history
+        data=refresh(history=history,eligible_tickers=eligible);data['request_id']=request_id;data['workflow_run']=os.environ.get('GITHUB_RUN_ID');data['ath_refresh_requested']=history;data['last_check_completed_at']=data.get('generated_at') or now();data['last_check_status']='prices_refreshed'
         atomic(ROOT/'market-data.json',data);atomic(ROOT/'data/stock-monitor.json',data)
         print('Price refresh completed:',len(data['instruments']),'tickers;',sum(bool(x.get('refresh_error')) for x in data['instruments']),'unavailable prices')
