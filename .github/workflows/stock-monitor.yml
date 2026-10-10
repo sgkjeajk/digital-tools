@@ -52,17 +52,17 @@ jobs:
           REFRESH_ATH: ${{ github.event_name != 'schedule' || github.event.schedule == '0 0,6,12 * * *' }}
         run: |
           run_count=1
-          if [ "$TRIGGER_EVENT" = "schedule" ] && [ -z "$LOOKUP_TICKER" ]; then
+          if [ -z "$LOOKUP_TICKER" ]; then
             run_count=30
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          if [ "$run_count" != "1" ] && [ "${REFRESH_ATH:-false}" != "true" ]; then
+          if [ "$run_count" != "1" ] && [ "$TRIGGER_EVENT" = "schedule" ] && [ "${REFRESH_ATH:-false}" != "true" ]; then
             git fetch origin main
             if git show origin/main:market-data.json > /tmp/market-data.json 2>/dev/null; then
-              if python -c "import datetime as dt, json, sys; data=json.load(open('/tmp/market-data.json', encoding='utf-8')); timestamp=data.get('last_check_completed_at') or data.get('generated_at'); checked_at=dt.datetime.fromisoformat(timestamp.replace('Z', '+00:00')) if timestamp else None; age=(dt.datetime.now(dt.timezone.utc)-checked_at).total_seconds() if checked_at else 999999; print(f'Latest stock monitor check age: {age / 60:.1f} minutes'); sys.exit(0 if age < 600 else 1)"
+              if python -c "import datetime as dt, json, sys; data=json.load(open('/tmp/market-data.json', encoding='utf-8')); timestamp=data.get('last_check_completed_at') or data.get('generated_at'); checked_at=dt.datetime.fromisoformat(timestamp.replace('Z', '+00:00')) if timestamp else None; age=(dt.datetime.now(dt.timezone.utc)-checked_at).total_seconds() if checked_at else 999999; print(f'Latest stock monitor check age: {age / 60:.1f} minutes'); sys.exit(0 if age < 120 else 1)"
               then
-                echo 'Recent successful check found; queued scheduled run can stop.'
+                echo 'Very recent successful check found; queued scheduled run can stop.'
                 exit 0
               fi
             fi
