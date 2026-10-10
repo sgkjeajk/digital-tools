@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 11,
+  "revision": 12,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-10T07:51:36.247Z",
+  "saved_at": "2026-10-10T08:13:09.595Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -45,20 +45,12 @@
       "metadata_source": "Nasdaq directory · 6 Oct 2026"
     },
     {
-      "ticker": "VTI",
+      "ticker": "1155.KL",
       "enabled": true,
-      "name": "Vanguard Morningstar Total Stock Market ETF",
-      "region": "United States",
-      "type": "ETF",
-      "metadata_source": "Nasdaq directory · 6 Oct 2026"
-    },
-    {
-      "ticker": "VUG",
-      "enabled": true,
-      "name": "Vanguard Morningstar Growth ETF",
-      "region": "United States",
-      "type": "ETF",
-      "metadata_source": "Nasdaq directory · 6 Oct 2026"
+      "name": "Malayan Banking Berhad",
+      "region": "Kuala Lumpur",
+      "type": "Stock",
+      "metadata_source": "Yahoo Finance quote webpage"
     },
     {
       "ticker": "AAPL",
