@@ -66,11 +66,11 @@ jobs:
               if latest["status"] in ("queued", "in_progress", "waiting", "requested", "pending"):
                   print("Monitor is already active; no duplicate recovery.")
                   raise SystemExit(0)
-              if age < 12:
-                  print("Monitor recently started; no recovery needed.")
+              if latest["conclusion"] != "failure" and age < 7:
+                  print("Monitor recently started successfully; no recovery needed.")
                   raise SystemExit(0)
 
-          # A new dispatch is suppressed until at least 12 minutes after any
+          # A new dispatch is suppressed until at least 7 minutes after any
           # previous run began, limiting repeated recovery requests.
           print("Monitor overdue; dispatching a recovery run.")
           request("/actions/workflows/stock-monitor.yml/dispatches",
