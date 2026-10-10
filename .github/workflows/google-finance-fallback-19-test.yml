@@ -15,46 +15,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: |
-          python -m pip install playwright
-          python -m playwright install --with-deps chromium
-      - name: Extract only exact symbol primary price, currency and date
+      - name: Extract exact symbol primary price, currency and date
         run: |
           python - <<'PY'
-          import json,re,datetime as dt
-          from playwright.sync_api import sync_playwright
+          import json,sys
+          sys.path.insert(0,'scripts')
+          import google_price_fallback as g
           cfg=json.load(open('data/stock-tickers.json'))
           items=[x['ticker'] for x in cfg['instruments'] if x['enabled']]
-          mapping={'SPY':'NYSEARCA','VOO':'NYSEARCA','VTI':'NYSEARCA','VUG':'NYSEARCA','SHEL':'NYSE'}
-          def sym(t):
-              return (t[:-3]+':SGX') if t.endswith('.SI') else t+':'+mapping.get(t,'NASDAQ')
-          def parse(t,s):
-              # Only match price directly following exact exchange-qualified symbol.
-              m=re.search(r'(?m)^'+re.escape(s)+r'\s*\n(?:add\s*\nAdd to list\s*\n)?([^\n]{2,140})\s*\n([\$€£]?\s*[\d,]+(?:\.\d+)?)\s*\n',t)
-              if not m:raise ValueError('Exact symbol/name/price block absent')
-              price=float(re.sub(r'[^\d.]','',m.group(2)))
-              if not 0<price<1e7:raise ValueError('Invalid price')
-              near=t[m.end():m.end()+260]
-              expected='SGD' if s.endswith(':SGX') else 'USD'
-              if not re.search(r'\b'+expected+r'\b',near):raise ValueError('Expected currency absent from primary quote block')
-              tm=re.search(r'(?:Closed:\s*)?(Oct\s+\d+[^\n]{0,100}?UTC[+-]\d+)',near)
-              if not tm:raise ValueError('Timestamp absent from primary quote block')
-              return {'price':price,'currency':expected,'quote_time_text':tm.group(1),'company':m.group(1)}
           results=[]
-          with sync_playwright() as p:
-              b=p.chromium.launch(headless=True,args=['--no-sandbox'])
-              for ticker in items:
-                  symbol=sym(ticker);page=b.new_page(locale='en-US')
-                  try:
-                      response=page.goto('https://www.google.com/finance/quote/'+symbol+'?hl=en',wait_until='domcontentloaded',timeout=25000)
-                      if not response or response.status!=200:raise ValueError('HTTP not 200')
-                      page.wait_for_timeout(1300)
-                      body=page.locator('body').inner_text(timeout=10000)
-                      if symbol not in page.url:raise ValueError('URL mismatch')
-                      result={'ticker':ticker,'symbol':symbol,**parse(body,symbol),'status':'PASS'}
-                  except Exception as e:result={'ticker':ticker,'symbol':symbol,'status':'FAIL','reason':str(e)[:180]}
-                  print('FALLBACK_QUOTE_RESULT',json.dumps(result));results.append(result);page.close()
-              b.close()
+          for ticker in items:
+              symbol=g.google_symbol(ticker)
+              try:
+                  data=g.retrieve(ticker)
+                  result={'ticker':ticker,'symbol':symbol,'price':data['current_price'],'currency':data['currency'],'source':data['source'],'quote_time':data['price_as_of'],'status':'PASS'}
+              except Exception as e:result={'ticker':ticker,'symbol':symbol,'status':'FAIL','reason':str(e)[:180]}
+              print('FALLBACK_QUOTE_RESULT',json.dumps(result));results.append(result)
           passed=sum(x['status']=='PASS' for x in results)
           print('FALLBACK_QUOTE_SUMMARY',json.dumps({'passed':passed,'total':len(results),'failed':len(results)-passed,'ath_verified':False,'production_unchanged':True}))
           if passed!=len(results):raise SystemExit(1)

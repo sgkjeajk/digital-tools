@@ -15,9 +15,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: |
-          python -m pip install playwright
-          python -m playwright install --with-deps chromium
       - name: Force both Yahoo current-price routes to fail, validate Google fallback for 19 tickers
         run: |
           python - <<'PY'
@@ -33,10 +30,10 @@ jobs:
             for ticker in tickers:
               try:
                 data=m.quote(ticker)
-                assert data['source']=='Google Finance individual ticker (rendered)'
+                assert data['source'] in ('Google Finance individual ticker webpage','Google Finance individual ticker (rendered)')
                 assert data['current_price']>0
                 assert data['currency']==('SGD' if ticker.endswith('.SI') else 'USD')
-                assert data['current_pct_change'] is None and data['prev_close'] is None
+                assert data['prev_close'] is None or data['prev_close']>0
                 stamp=dt.datetime.fromisoformat(data['price_as_of'])
                 assert stamp.tzinfo is not None
                 passed+=1

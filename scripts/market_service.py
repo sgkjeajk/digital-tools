@@ -69,7 +69,12 @@ def validate(data):
         if not isinstance(x,dict) or type(x.get('enabled'))!=bool: raise ValueError('Enabled must be true or false.')
         t=symbol(x.get('ticker'))
         if t in seen: raise ValueError('Duplicate ticker: '+t)
-        seen.add(t); result.append({**lookup(t),'enabled':x['enabled']})
+        seen.add(t)
+        if all(isinstance(x.get(k),str) and x.get(k).strip() for k in ('name','region','type','metadata_source')) and x['type'] in ('ETF','Stock'):
+            meta={'ticker':t,'name':x['name'].strip(),'region':x['region'].strip(),'type':x['type'],'metadata_source':x['metadata_source'].strip()}
+        else:
+            meta=lookup(t)
+        result.append({**meta,'enabled':x['enabled']})
     result.sort(key=lambda x:(x['type']!='ETF',x['ticker']))
     return {'version':1,'refreshIntervalMinutes':interval,'instruments':result}
 
@@ -157,9 +162,9 @@ def quote_google(ticker):
     script=str(ROOT/'scripts/google_price_fallback.py')
     process=subprocess.run([sys.executable,script,ticker],capture_output=True,text=True,timeout=45)
     if process.returncode:
-        raise ValueError('Google rendered ticker quote failed: '+(process.stdout or process.stderr)[-400:])
+        raise ValueError('Google ticker quote failed: '+(process.stdout or process.stderr)[-400:])
     data=json.loads(process.stdout.strip())
-    if data.get('source')!='Google Finance individual ticker (rendered)' or not finite(data.get('current_price')) or data['current_price']<=0:
+    if data.get('source') not in ('Google Finance individual ticker webpage','Google Finance individual ticker (rendered)') or not finite(data.get('current_price')) or data['current_price']<=0:
         raise ValueError('Unverified Google quote')
     expected='SGD' if ticker.endswith('.SI') else 'USD'
     if data.get('currency')!=expected:raise ValueError('Google quote currency mismatch')
@@ -167,9 +172,9 @@ def quote_google(ticker):
     if quote_time.tzinfo is None:raise ValueError('Missing Google quote timezone')
     age=dt.datetime.now(dt.timezone.utc)-quote_time
     if age<dt.timedelta(minutes=-5) or age>dt.timedelta(days=7):raise ValueError('Stale Google quote')
-    # Google rendered primary price block does not establish previous close.
-    data['prev_close']=None
-    data['current_pct_change']=None
+    if not finite(data.get('prev_close')) or data['prev_close']<=0:
+        data['prev_close']=None
+        data['current_pct_change']=None
     return data
 
 def historical_high(ticker):
