@@ -1,0 +1,11 @@
+{
+  "request_id": "47e20024-11de-4205-a954-6125c0b942df",
+  "generated_at": "2026-10-10T08:10:36.811982Z",
+  "instrument": {
+    "ticker": "1155.KL",
+    "name": "Malayan Banking Berhad",
+    "region": "Kuala Lumpur",
+    "type": "Stock",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
