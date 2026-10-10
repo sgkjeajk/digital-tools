@@ -10,13 +10,11 @@ on:
       - .github/workflows/stock-monitor.yml
       - .github/workflows/stock-monitor-watchdog.yml
   schedule:
-    # Redundant wake-ups improve reliability; Python keeps price scraping fresh for 15 minutes
-    # and only publishes heartbeat updates when the last successful check is old enough.
-    - cron: '1-56/5 * * * *'
-    - cron: '4-59/5 * * * *'
-    - cron: '7-57/5 * * * *'
-    # Full historical highs: 08:00, 14:00 and 20:00 SGT.
-    - cron: '0 0,6,12 * * *'
+    # Off-peak launcher. GitHub cron is best effort, so one successful launch
+    # runs an internal 30-cycle checker loop every 8 minutes.
+    - cron: '17 */3 * * *'
+    # Full historical highs: 08:23, 14:23 and 20:23 SGT, away from :00 load.
+    - cron: '23 0,6,12 * * *'
   workflow_dispatch:
     inputs:
       lookupTicker:
@@ -49,7 +47,7 @@ jobs:
           TRIGGER_EVENT: ${{ github.event_name }}
           LOOKUP_TICKER: ${{ inputs.lookupTicker }}
           REQUEST_ID: ${{ inputs.requestId }}
-          REFRESH_ATH: ${{ github.event_name != 'schedule' || github.event.schedule == '0 0,6,12 * * *' }}
+          REFRESH_ATH: ${{ github.event_name != 'schedule' || github.event.schedule == '23 0,6,12 * * *' }}
         run: |
           run_count=1
           if [ -z "$LOOKUP_TICKER" ]; then
