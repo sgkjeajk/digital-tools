@@ -1,9 +1,9 @@
 name: Stock Monitor Watchdog
 on:
   schedule:
-    # Backup schedule for the main updater. GitHub schedules are best effort,
-    # so this independent workflow gives the heartbeat another chance to run.
-    - cron: '*/5 * * * *'
+    # Backup launcher offset from the main updater. One successful launch runs
+    # an internal 30-cycle checker loop every 8 minutes.
+    - cron: '43 */3 * * *'
   workflow_dispatch:
 permissions:
   contents: write
