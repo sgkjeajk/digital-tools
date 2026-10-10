@@ -50,18 +50,28 @@ jobs:
           LOOKUP_TICKER: ${{ inputs.lookupTicker }}
           REQUEST_ID: ${{ inputs.requestId }}
           REFRESH_ATH: ${{ github.event_name != 'schedule' || github.event.schedule == '0 0,6,12 * * *' }}
-        run: python scripts/github_market_update.py
-      - name: Commit shared result without overwriting a newer ticker list
         run: |
-          git fetch origin main
-          if [ "$(git rev-parse HEAD:data/stock-tickers.json)" != "$(git rev-parse origin/main:data/stock-tickers.json)" ]; then
-            echo 'A newer configuration exists; its queued update will handle prices.'
-            exit 0
+          run_count=1
+          if [ "$TRIGGER_EVENT" = "schedule" ] && [ -z "$LOOKUP_TICKER" ]; then
+            run_count=5
           fi
-          git add market-data.json data/stock-monitor.json data/lookups
-          if git diff --cached --quiet; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Update Stock ETF Monitor shared result'
-          git pull --rebase origin main
-          git push origin HEAD:main
+          for attempt in $(seq 1 "$run_count"); do
+            echo "Stock monitor checker cycle $attempt of $run_count"
+            python scripts/github_market_update.py
+            git fetch origin main
+            if [ "$(git rev-parse HEAD:data/stock-tickers.json)" != "$(git rev-parse origin/main:data/stock-tickers.json)" ]; then
+              echo 'A newer configuration exists; its queued update will handle prices.'
+              exit 0
+            fi
+            git add market-data.json data/stock-monitor.json data/lookups
+            if ! git diff --cached --quiet; then
+              git commit -m 'Update Stock ETF Monitor shared result'
+              git pull --rebase origin main
+              git push origin HEAD:main
+            fi
+            if [ "$attempt" -lt "$run_count" ]; then
+              sleep 360
+            fi
+          done
