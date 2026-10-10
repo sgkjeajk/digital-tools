@@ -1,0 +1,11 @@
+{
+  "request_id": "627c8fad-698c-473d-b653-8e8e7cf06c3a",
+  "generated_at": "2026-10-10T07:49:52.899226Z",
+  "instrument": {
+    "ticker": "Z74.SI",
+    "name": "Singapore Telecommunications Limited",
+    "region": "SES",
+    "type": "Stock",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
