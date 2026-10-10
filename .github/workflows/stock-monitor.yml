@@ -8,6 +8,7 @@ on:
       - scripts/google_price_fallback.py
       - scripts/github_market_update.py
       - .github/workflows/stock-monitor.yml
+      - .github/workflows/stock-monitor-watchdog.yml
   schedule:
     # Redundant wake-ups improve reliability; Python keeps price scraping fresh for 15 minutes
     # and only publishes heartbeat updates when the last successful check is old enough.
