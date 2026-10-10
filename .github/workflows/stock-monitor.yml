@@ -9,8 +9,8 @@ on:
       - scripts/github_market_update.py
       - .github/workflows/stock-monitor.yml
   schedule:
-    # Fifteen-minute checks; GitHub scheduling is still best effort.
-    - cron: '4,19,34,49 * * * *'
+    # Five-minute wake-ups improve reliability; Python keeps price scraping fresh for 15 minutes.
+    - cron: '4-59/5 * * * *'
     # Full historical highs: 08:00, 14:00 and 20:00 SGT.
     - cron: '0 0,6,12 * * *'
   workflow_dispatch:
