@@ -9,9 +9,7 @@ on:
       - scripts/github_market_update.py
       - .github/workflows/stock-monitor.yml
   schedule:
-    # Five-minute checks plus offset checks; open-market price freshness is checked in Python.
-    - cron: '2-57/5 * * * *'
-    # Additional offset checks (GitHub scheduling is still best effort).
+    # Fifteen-minute checks; GitHub scheduling is still best effort.
     - cron: '4,19,34,49 * * * *'
     # Full historical highs: 08:00, 14:00 and 20:00 SGT.
     - cron: '0 0,6,12 * * *'

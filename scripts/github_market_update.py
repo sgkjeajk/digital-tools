@@ -3,6 +3,8 @@ import os, json, datetime as dt
 from market_service import ROOT,atomic,lookup,now,refresh,symbol,validate,read_config
 from market_hours import market_open
 
+FRESH_PRICE_SECONDS = 15 * 60
+
 def prices_are_fresh(config, data, at=None, eligible=None):
     """Skip only when every enabled ticker has a recent successful price."""
     if data.get('config_revision') != config.get('revision',0): return False
@@ -16,7 +18,7 @@ def prices_are_fresh(config, data, at=None, eligible=None):
         try:
             stamp=dt.datetime.fromisoformat(row['price_retrieved_at'].replace('Z','+00:00'))
             age=(at-stamp).total_seconds()
-            if not 0 <= age < 300: return False
+            if not 0 <= age < FRESH_PRICE_SECONDS: return False
         except (KeyError,ValueError,TypeError): return False
     return True
 
@@ -65,7 +67,7 @@ if __name__=='__main__':
             except (OSError,ValueError): saved={}
             if prices_are_fresh(config,saved,at,eligible):
                 write_check_heartbeat(config,'skipped_recent_prices_fresh',request_id,history)
-                print('Skipped scraping: all open-market prices were successfully retrieved less than 5 minutes ago.')
+                print('Skipped scraping: all open-market prices were successfully retrieved less than 15 minutes ago.')
                 raise SystemExit(0)
         data=refresh(history=history,eligible_tickers=eligible);data['request_id']=request_id;data['workflow_run']=os.environ.get('GITHUB_RUN_ID');data['ath_refresh_requested']=history;data['last_check_completed_at']=data.get('generated_at') or now();data['last_check_status']='prices_refreshed'
         atomic(ROOT/'market-data.json',data);atomic(ROOT/'data/stock-monitor.json',data)
