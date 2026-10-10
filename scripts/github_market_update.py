@@ -4,6 +4,7 @@ from market_service import ROOT,atomic,lookup,now,refresh,symbol,validate,read_c
 from market_hours import market_open
 
 FRESH_PRICE_SECONDS = 15 * 60
+HEARTBEAT_MIN_SECONDS = 10 * 60
 
 def prices_are_fresh(config, data, at=None, eligible=None):
     """Skip only when every enabled ticker has a recent successful price."""
@@ -22,11 +23,22 @@ def prices_are_fresh(config, data, at=None, eligible=None):
         except (KeyError,ValueError,TypeError): return False
     return True
 
-def write_check_heartbeat(config, status, request_id='', history=False):
+def recent_check(data, at=None, minimum_seconds=HEARTBEAT_MIN_SECONDS):
+    at=at or dt.datetime.now(dt.timezone.utc)
+    try:
+        stamp=dt.datetime.fromisoformat(data['last_check_completed_at'].replace('Z','+00:00'))
+        age=(at-stamp).total_seconds()
+        return 0 <= age < minimum_seconds
+    except (KeyError,ValueError,TypeError):
+        return False
+
+def write_check_heartbeat(config, status, request_id='', history=False, force=False):
     try:
         data=json.loads((ROOT/'market-data.json').read_text(encoding='utf-8'))
     except (OSError,ValueError):
         data={}
+    if not force and recent_check(data):
+        return data
     stamp=now()
     data.setdefault('ath_since','2000-01-01')
     data.setdefault('instruments',[])

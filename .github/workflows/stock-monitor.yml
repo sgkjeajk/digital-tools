@@ -9,8 +9,11 @@ on:
       - scripts/github_market_update.py
       - .github/workflows/stock-monitor.yml
   schedule:
-    # Five-minute wake-ups improve reliability; Python keeps price scraping fresh for 15 minutes.
+    # Redundant wake-ups improve reliability; Python keeps price scraping fresh for 15 minutes
+    # and only publishes heartbeat updates when the last successful check is old enough.
+    - cron: '1-56/5 * * * *'
     - cron: '4-59/5 * * * *'
+    - cron: '7-57/5 * * * *'
     # Full historical highs: 08:00, 14:00 and 20:00 SGT.
     - cron: '0 0,6,12 * * *'
   workflow_dispatch:
