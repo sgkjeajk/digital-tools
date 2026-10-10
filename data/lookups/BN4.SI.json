@@ -1,0 +1,11 @@
+{
+  "request_id": "e91084e4-af52-4995-9a71-7d1d13c3dbd5",
+  "generated_at": "2026-10-10T22:06:24.117238Z",
+  "instrument": {
+    "ticker": "BN4.SI",
+    "name": "Keppel Ltd.",
+    "region": "Singapore",
+    "type": "Stock",
+    "metadata_source": "Yahoo Finance quote page \u00b7 11 Oct 2026"
+  }
+}
