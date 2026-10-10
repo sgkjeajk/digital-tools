@@ -53,7 +53,7 @@ jobs:
         run: |
           run_count=1
           if [ "$TRIGGER_EVENT" = "schedule" ] && [ -z "$LOOKUP_TICKER" ]; then
-            run_count=5
+            run_count=15
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
