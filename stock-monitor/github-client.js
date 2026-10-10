@@ -37,11 +37,23 @@ window.ECGitHub=(()=>{
   for(let i=0;i<45;i++){await delay(4000);const data=await raw('market-data.json');if(data.request_id===requestId)return data;}
   throw Error('Price retrieval is still queued or running. Saved prices retain their timestamps. Check the updater workflow and refresh this page later.');
  }
+ async function startChecker30(progress=()=>{}){
+  const data=await raw('data/stock-monitor.json').catch(()=>raw('market-data.json'));
+  const timestamp=data.last_check_completed_at||data.generated_at;
+  if(timestamp){
+   const ageMinutes=(Date.now()-Date.parse(timestamp))/60000;
+   if(Number.isFinite(ageMinutes)&&ageMinutes<15){
+    throw Error('Checker is already fresh: last completed check was '+ageMinutes.toFixed(1)+' minutes ago. No 30x recovery launch needed.');
+   }
+  }
+  const requestId=id();await dispatch({requestId});progress('30x price checker queued in GitHub Actions. It will run up to 30 cycles, about every 8 minutes, after GitHub starts it.');
+  return {requestId,workflowUrl:'https://github.com/'+repo+'/actions/workflows/stock-monitor.yml'};
+ }
  function mount(container){
   container.innerHTML='<details><summary>Owner access — connect GitHub</summary><p>For shared saves and new price retrieval, use a fine-grained token restricted to <b>sgkjeajk/digital-tools</b>, with <b>Contents: read and write</b> and <b>Actions: read and write</b>. The token stays in this tab’s memory until you disconnect or reload. Never paste it into chat.</p><label>GitHub token <input type="password" autocomplete="off" spellcheck="false" aria-label="GitHub token"></label><button type="button" class="connect">Connect GitHub</button> <button type="button" class="disconnect">Disconnect</button><p class="auth-status" role="status">Not connected. Public viewing is available.</p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a restricted token</a> · <a href="https://github.com/sgkjeajk/digital-tools/actions/workflows/stock-monitor.yml" target="_blank" rel="noopener noreferrer">Check price updater</a></details>';
   const input=container.querySelector('input'),status=container.querySelector('.auth-status'),button=container.querySelector('.connect');
   button.onclick=async()=>{const value=input.value.trim();input.value='';if(!value){status.textContent='Enter your restricted GitHub token.';return;}credential=value;button.disabled=true;try{await request('');status.textContent='Connected for this tab. Save writes the shared GitHub ticker configuration.';}catch(e){credential='';status.textContent=e.message;}finally{button.disabled=false;}};
   container.querySelector('.disconnect').onclick=()=>{credential='';input.value='';status.textContent='Disconnected. The token has been cleared from this tab.';};
  }
- return {file,raw,lookup,save,refreshPrices,mount,connected:()=>Boolean(credential)};
+ return {file,raw,lookup,save,refreshPrices,startChecker30,mount,connected:()=>Boolean(credential)};
 })();
