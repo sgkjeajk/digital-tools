@@ -67,5 +67,47 @@ class ValidateConfigTests(unittest.TestCase):
         self.assertFalse(result["instruments"][0]["enabled"])
 
 
+class QuoteChartTests(unittest.TestCase):
+    def test_uses_chart_previous_close_for_mutual_funds(self):
+        original_fetch = market_service.fetch
+        original_now = market_service.dt.datetime
+
+        class FixedDateTime(market_service.dt.datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2026, 10, 11, 15, 20, tzinfo=tz)
+
+        try:
+            def fake_fetch(url):
+                self.assertIn("0P0000Z32L.SI", url)
+                return """
+                {
+                  "chart": {
+                    "result": [{
+                      "meta": {
+                        "currency": "SGD",
+                        "symbol": "0P0000Z32L.SI",
+                        "regularMarketPrice": 7.5065,
+                        "chartPreviousClose": 7.5107,
+                        "regularMarketTime": 1791536400
+                      }
+                    }]
+                  }
+                }
+                """
+
+            market_service.fetch = fake_fetch
+            market_service.dt.datetime = FixedDateTime
+            result = market_service.quote_chart("0P0000Z32L.SI")
+        finally:
+            market_service.fetch = original_fetch
+            market_service.dt.datetime = original_now
+
+        self.assertEqual(result["current_price"], 7.5065)
+        self.assertEqual(result["prev_close"], 7.5107)
+        self.assertAlmostEqual(result["current_pct_change"], -0.05592022048543921)
+        self.assertEqual(result["currency"], "SGD")
+
+
 if __name__ == "__main__":
     unittest.main()
