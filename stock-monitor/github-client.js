@@ -25,7 +25,7 @@ window.ECGitHub=(()=>{
  async function save(input,items){
   if(!credential)throw Error('Connect GitHub to save a shared configuration. Nothing was saved.');
   if(items.length>MAX_TICKERS)throw Error('Maximum '+MAX_TICKERS+' tickers.');const seen=new Set();
-  const instruments=items.map(x=>{const ticker=normalise(x.ticker);if(seen.has(ticker))throw Error('Duplicate ticker: '+ticker);seen.add(ticker);if(typeof x.enabled!=='boolean'||!['ETF','Stock'].includes(x.type)||!x.name||!x.market)throw Error('Verify every ticker before saving.');return {ticker,enabled:x.enabled,name:x.name,region:x.market,type:x.type,metadata_source:x.source||x.metadata_source};}).sort((a,b)=>(a.type==='ETF'?0:1)-(b.type==='ETF'?0:1)||a.ticker.localeCompare(b.ticker));
+  const instruments=items.map(x=>{const ticker=normalise(x.ticker);if(seen.has(ticker))throw Error('Duplicate ticker: '+ticker);seen.add(ticker);if(typeof x.enabled!=='boolean'||!['ETF','Stock','Fund'].includes(x.type)||!x.name||!x.market)throw Error('Verify every ticker before saving.');return {ticker,enabled:x.enabled,name:x.name,region:x.market,type:x.type,metadata_source:x.source||x.metadata_source};}).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
   const interval=input.refreshIntervalMinutes;if(![5,10,15,30,60].includes(interval))throw Error('Invalid refresh interval.');
   const latest=await file('data/stock-tickers.json');if((latest.data.revision||0)!==input.revision)throw Error('Another save changed the configuration. Reload before saving your draft.');
   const cfg={version:1,revision:input.revision+1,refreshIntervalMinutes:interval,saved_at:new Date().toISOString(),instruments};
