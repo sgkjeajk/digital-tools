@@ -43,10 +43,10 @@ window.ECGitHub=(()=>{
   if(timestamp){
    const ageMinutes=(Date.now()-Date.parse(timestamp))/60000;
    if(Number.isFinite(ageMinutes)&&ageMinutes<15){
-    throw Error('Checker is already fresh: last completed check was '+ageMinutes.toFixed(1)+' minutes ago. No 5x recovery launch needed.');
+    throw Error('Checker is already fresh: last completed check was '+ageMinutes.toFixed(1)+' minutes ago. No 10x recovery launch needed.');
    }
   }
-  const requestId=id();await dispatch({requestId});progress('5x price checker queued in GitHub Actions. It will run up to 5 cycles, about every 8 minutes, after GitHub starts it.');
+  const requestId=id();await dispatch({requestId,checkerCycles:'10'});progress('10x price checker queued in GitHub Actions. It will run up to 10 cycles, about every 8 minutes, after GitHub starts it.');
   return {requestId,workflowUrl:'https://github.com/'+repo+'/actions/workflows/stock-monitor.yml'};
  }
  function mount(container){
