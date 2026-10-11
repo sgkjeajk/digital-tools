@@ -3,8 +3,7 @@ const $=id=>document.getElementById(id), valid=n=>typeof n==='number'&&Number.is
 const sg=t=>t&&!Number.isNaN(Date.parse(t))?new Intl.DateTimeFormat('en-SG',{timeZone:'Asia/Singapore',dateStyle:'medium',timeStyle:'short'}).format(new Date(t))+' SGT':'Not yet retrieved';
 const HIDDEN_TICKERS_KEY='stockMonitorHiddenTickers';
 let interval, running=false, exportRows=[], latestCfg=null, latestData=null, hiddenTickers=loadHiddenTickers();
-const IDS={ETF:'etf',Stock:'stock',Fund:'fund'};
-const tableSort={ETF:{key:null,dir:'asc'},Stock:{key:null,dir:'asc'},Fund:{key:null,dir:'asc'}};
+const tableSort={ETF:{key:null,dir:'asc'},Stock:{key:null,dir:'asc'}};
 function loadHiddenTickers(){
  try{const saved=JSON.parse(localStorage.getItem(HIDDEN_TICKERS_KEY)||'[]');return new Set(Array.isArray(saved)?saved:[]);}
  catch{return new Set();}
@@ -33,7 +32,7 @@ function renderSettings(allActive){
  if(!allActive.length){const empty=document.createElement('p');empty.textContent='No enabled tickers found.';list.append(empty);}
 }
 function sortTable(type){
- const tbody=$(IDS[type]+'Rows'),state=tableSort[type];
+ const tbody=$(type==='ETF'?'etfRows':'stockRows'),state=tableSort[type];
  if(state.key){
   const rows=[...tbody.querySelectorAll('tr[data-ticker]')];
   rows.sort((a,b)=>{
@@ -44,7 +43,7 @@ function sortTable(type){
   });
   tbody.append(...rows);
  }
- const section=$(IDS[type]+'Section');
+ const section=$(type==='ETF'?'etfSection':'stockSection');
  for(const th of section.querySelectorAll('th[data-sort-key]')){
   const selected=th.dataset.sortKey===state.key;
   th.setAttribute('aria-sort',selected?(state.dir==='asc'?'ascending':'descending'):'none');
@@ -58,38 +57,43 @@ function chooseSort(type,key){
 }
 async function get(path){const response=await fetch(path+'?ts='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('Saved data unavailable: '+response.status);return response.json();}
 function cell(tr,text,className=''){const td=document.createElement('td');td.textContent=text;td.className=className;tr.append(td);return td;}
+function tableBody(id,sectionId){let body=$(id);if(body)return body;body=document.createElement('tbody');body.id=id;$(sectionId).querySelector('table').append(body);return body;}
 function htmlEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function excelNum(value){return valid(value)?String(value):'';}
 function formulaCell(value){return '<td style="mso-number-format:\'0.00%\'">'+htmlEscape(value)+'</td>';}
 function excelDate(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/-/g,'');}
 function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+function mobileBrowser(){return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||navigator.maxTouchPoints>1&&/Macintosh/i.test(navigator.userAgent);}
+function showExportPanel(name,html,tableHtml){
+ const link=$('exportDownloadLink'),panel=$('exportPanel');
+ $('exportPreview').innerHTML=tableHtml;
+ link.href='data:application/vnd.ms-excel;charset=utf-8,'+encodeURIComponent(html);
+ link.download=name;
+ panel.classList.add('open');
+ panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function exportExcel(){
-if(!exportRows.length){$('status').textContent=latestCfg?'No tickers are currently selected for display. Open Settings and show at least one ticker before exporting.':'No monitor data loaded yet. Please wait for the page to finish loading.';return;}
-if(!window.XlsxWriter){$('status').textContent='Excel export is unavailable because xlsx-writer.js did not load. Reload the page and try again.';return;}
-const columns=[['#',6],['Category',10],['Ticker',15],['Name',44],['Region / Market',16],['Currency',10],['Previous Close',14],['Previous Day % Change',15],['Current Price',13],['Current % Change',13],['All-Time High',14],['Drawdown %',12],['Market Time',26],['Retrieved Time',26],['Refresh Status',16]];
-const text=v=>({value:String(v??''),style:'text'}),num=v=>valid(v)?{value:v,style:'num'}:{style:'num'};
-const rows=exportRows.map((r,i)=>{
-const n=i+2,prevDayBase=valid(r.prev_close)&&valid(r.prev_day_pct_change)?r.prev_close/(1+r.prev_day_pct_change/100):null;
-const prevDay=valid(prevDayBase)&&prevDayBase!==0?{style:'pct',formula:'IFERROR(G'+n+'/'+prevDayBase+'-1,"")',value:r.prev_close/prevDayBase-1}:{style:'pct'};
-const current=valid(r.current_price)&&valid(r.prev_close)&&r.prev_close!==0?{style:'pct',formula:'IFERROR(I'+n+'/G'+n+'-1,"")',value:r.current_price/r.prev_close-1}:{style:'pct'};
-const drawdown=valid(r.current_price)&&valid(r.ath)&&r.ath!==0?{style:'pct',formula:'IFERROR(I'+n+'/K'+n+'-1,"")',value:r.current_price/r.ath-1}:{style:'pct'};
-return [{value:i+1,style:'int'},text(r.type),text(r.ticker),text(r.name),text(r.region),text(r.currency),num(r.prev_close),prevDay,num(r.current_price),current,num(r.ath),drawdown,text(sg(r.price_as_of)),text(sg(r.price_retrieved_at)),text(r.refresh_error?'Refresh failed':'OK')];
-});
-const blob=XlsxWriter.build({sheetName:'Stock Monitor',columns:columns.map(([header,width])=>({header,width})),rows}),name='stock-monitor-'+excelDate()+'.xlsx';
-download(name,blob,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-$('status').textContent='Excel (.xlsx) export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .xlsx file.';
+ if(!exportRows.length){$('status').textContent=latestCfg?'No tickers are currently selected for display. Open Settings and show at least one ticker before exporting.':'No monitor data loaded yet. Please wait for the page to finish loading.';return;}
+ const columns=['#','Category','Ticker','Name','Region / Market','Currency','Previous Close','Previous Day % Change','Current Price','Current % Change','All-Time High','Drawdown %','Market Time','Retrieved Time','Refresh Status'];
+ const rows=exportRows.map((r,i)=>{const row=i+2,prevDayBase=valid(r.prev_close)&&valid(r.prev_day_pct_change)?r.prev_close/(1+r.prev_day_pct_change/100):null,prevDayFormula=valid(prevDayBase)?'=IFERROR(G'+row+'/'+prevDayBase+'-1,"")':'',currentFormula='=IFERROR(I'+row+'/G'+row+'-1,"")',drawdownFormula='=IFERROR(I'+row+'/K'+row+'-1,"")';return '<tr><td>'+(i+1)+'</td><td>'+htmlEscape(r.type)+'</td><td>'+htmlEscape(r.ticker)+'</td><td>'+htmlEscape(r.name)+'</td><td>'+htmlEscape(r.region)+'</td><td>'+htmlEscape(r.currency)+'</td><td>'+htmlEscape(excelNum(r.prev_close))+'</td>'+formulaCell(prevDayFormula)+'<td>'+htmlEscape(excelNum(r.current_price))+'</td>'+formulaCell(currentFormula)+'<td>'+htmlEscape(excelNum(r.ath))+'</td>'+formulaCell(drawdownFormula)+'<td>'+htmlEscape(sg(r.price_as_of))+'</td><td>'+htmlEscape(sg(r.price_retrieved_at))+'</td><td>'+htmlEscape(r.refresh_error?'Refresh failed':'OK')+'</td></tr>';}).join('');
+ const tableHtml='<table><thead><tr>'+columns.map(c=>'<th>'+htmlEscape(c)+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
+ const html='<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:5px}th{background:#eaf3ff}</style></head><body>'+tableHtml+'</body></html>',name='stock-monitor-'+excelDate()+'.xls';
+ if(mobileBrowser()){showExportPanel(name,html,tableHtml);$('status').textContent='Excel export preview is shown above. Tap Download Excel File, or use Share / Save to Files if your phone opens the table.';return;}
+ download(name,html,'application/vnd.ms-excel;charset=utf-8');
+ $('status').textContent='Excel export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .xls file.';
 }
 function render(cfg,data){
  latestCfg=cfg;latestData=data;
  const prices=new Map((data.instruments||[]).map(x=>[x.ticker,x]));
- const allActive=cfg.instruments.filter(x=>x.enabled).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
+ const allActive=cfg.instruments.filter(x=>x.enabled).sort((a,b)=>(a.type==='ETF'?0:1)-(b.type==='ETF'?0:1)||a.ticker.localeCompare(b.ticker));
  renderSettings(allActive);
  const active=allActive.filter(x=>!hiddenTickers.has(x.ticker));
  exportRows=active.map(x=>({...x,...(prices.get(x.ticker)||{})}));
- $('etfRows').replaceChildren();$('stockRows').replaceChildren();$('fundRows').replaceChildren();let successful=[];
- for(const x of active){const q=prices.get(x.ticker)||{},tr=document.createElement('tr');tr.dataset.ticker=x.ticker;tr.dataset.region=x.region||'';const tickerCell=cell(tr,'');const tickerLink=document.createElement('a');tickerLink.textContent=x.ticker;tickerLink.href='https://finance.yahoo.com/quote/'+encodeURIComponent(x.ticker)+'/';tickerLink.target='_blank';tickerLink.rel='noopener noreferrer';tickerLink.setAttribute('aria-label',x.ticker+' on Yahoo Finance (opens in a new tab)');tickerCell.append(tickerLink);cell(tr,x.region);const name=cell(tr,x.name+(q.currency?' ('+q.currency+')':''));const note=document.createElement('small');note.className='row-note';note.textContent=q.refresh_error?'Refresh failed · '+sg(q.price_as_of):q.price_as_of?'Market time: '+sg(q.price_as_of):'Price pending';if(q.ath_error)note.textContent+=' · Using saved ATH — latest update failed.';name.append(note);if(q.price_retrieved_at&&!q.refresh_error)successful.push(q.price_retrieved_at);cell(tr,fmt(q.prev_close));cell(tr,pct(q.prev_day_pct_change),cls(q.prev_day_pct_change));cell(tr,fmt(q.current_price));cell(tr,pct(q.current_pct_change),cls(q.current_pct_change));const ath=cell(tr,fmt(q.ath));if(q.ath_error){ath.title=q.ath_error;ath.className='warning';}cell(tr,pct(q.drawdown_pct),cls(q.drawdown_pct));$((IDS[x.type]||'stock')+'Rows').append(tr);}
- for(const [type,id] of [['ETF','etf'],['Stock','stock'],['Fund','fund']]){const allCount=allActive.filter(x=>x.type===type).length,count=active.filter(x=>x.type===type).length,hidden=allCount-count,section=$(id+'Section');section.style.display=count?'':'none';$(id+'Count').textContent='Total '+(type==='ETF'?'ETFs':type==='Fund'?'Funds':'Stocks')+': '+count+(hidden?' · '+hidden+' hidden':'');}
- sortTable('ETF');sortTable('Stock');sortTable('Fund');
+ const etfBody=tableBody('etfRows','etfSection'),stockBody=tableBody('stockRows','stockSection');
+ etfBody.replaceChildren();stockBody.replaceChildren();let successful=[];
+ for(const x of active){const q=prices.get(x.ticker)||{},tr=document.createElement('tr');tr.dataset.ticker=x.ticker;tr.dataset.region=x.region||'';const tickerCell=cell(tr,'');const tickerLink=document.createElement('a');tickerLink.textContent=x.ticker;tickerLink.href='https://finance.yahoo.com/quote/'+encodeURIComponent(x.ticker)+'/';tickerLink.target='_blank';tickerLink.rel='noopener noreferrer';tickerLink.setAttribute('aria-label',x.ticker+' on Yahoo Finance (opens in a new tab)');tickerCell.append(tickerLink);cell(tr,x.region);const name=cell(tr,x.name+(q.currency?' ('+q.currency+')':''));const note=document.createElement('small');note.className='row-note';note.textContent=q.refresh_error?'Refresh failed · '+sg(q.price_as_of):q.price_as_of?'Market time: '+sg(q.price_as_of):'Price pending';if(q.ath_error)note.textContent+=' · Using saved ATH — latest update failed.';name.append(note);if(q.price_retrieved_at&&!q.refresh_error)successful.push(q.price_retrieved_at);cell(tr,fmt(q.prev_close));cell(tr,pct(q.prev_day_pct_change),cls(q.prev_day_pct_change));cell(tr,fmt(q.current_price));cell(tr,pct(q.current_pct_change),cls(q.current_pct_change));const ath=cell(tr,fmt(q.ath));if(q.ath_error){ath.title=q.ath_error;ath.className='warning';}cell(tr,pct(q.drawdown_pct),cls(q.drawdown_pct));(x.type==='ETF'?etfBody:stockBody).append(tr);}
+ for(const [type,id] of [['ETF','etf'],['Stock','stock']]){const allCount=allActive.filter(x=>x.type===type).length,count=active.filter(x=>x.type===type).length,hidden=allCount-count,section=$(id+'Section');section.style.display=count?'':'none';$(id+'Count').textContent='Total '+(type==='ETF'?'ETFs':'Stocks')+': '+count+(hidden?' · '+hidden+' hidden':'');}
+ sortTable('ETF');sortTable('Stock');
  const latestPriceTime=successful.sort().at(-1)||allActive.map(x=>prices.get(x.ticker)?.price_retrieved_at).filter(Boolean).sort().at(-1),hiddenCount=allActive.length-active.length;
  $('reference-time').textContent=sg(data.last_check_completed_at||data.generated_at||latestPriceTime);$('tracked').textContent=active.length+' shown'+(hiddenCount?' · '+hiddenCount+' hidden':'')+' · '+allActive.length+' total instruments';
  clearInterval(interval);interval=setInterval(()=>refresh(false),Math.max(5,Math.min(10,cfg.refreshIntervalMinutes||10))*60000);
@@ -98,7 +102,7 @@ function render(cfg,data){
 async function load(){const [cfg,data]=await Promise.all([get('../data/stock-tickers.json'),get('../market-data.json')]);return render(cfg,data);}
 async function refresh(){if(running)return;running=true;try{const rows=await load();const failed=rows.filter(x=>x.refresh_error).length;$('status').textContent=failed?failed+' ticker(s) could not be updated; their saved prices and timestamps are retained.':'Latest saved data loaded. Last refresh & check completed: '+$('reference-time').textContent+'.';}catch(e){$('status').textContent=e.message;}finally{running=false;}}
 for(const head of document.querySelectorAll('thead')){
- const type=head.closest('#etfSection')?'ETF':head.closest('#fundSection')?'Fund':'Stock',tr=document.createElement('tr');
+ const type=head.closest('#etfSection')?'ETF':'Stock',tr=document.createElement('tr');
  for(const text of ['Ticker','Region / Market','Stock / ETF Name','Prev Day Close','Prev Day % Chg','Current Price','Current % Chg','All-Time High','Drawdown %']){
   const th=document.createElement('th');
   if(text==='Ticker'||text==='Region / Market'){
@@ -111,12 +115,10 @@ for(const head of document.querySelectorAll('thead')){
  }
  head.append(tr);
 }
-$('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});
-if($('jumpFund'))$('jumpFund').onclick=()=>{const section=$('fundSection');if(section.style.display==='none'){$('status').textContent='No funds are currently shown. Add a fund in Admin, or turn it on in Settings.';return;}section.scrollIntoView({behavior:'smooth'});};window.addEventListener('focus',()=>refresh(false));refresh(false);
+$('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});window.addEventListener('focus',()=>refresh(false));refresh(false);
 $('exportExcelButton').onclick=exportExcel;
 $('settingsButton').onclick=()=>toggleSettings();
 $('settingsCloseButton').onclick=()=>toggleSettings(false);
 $('showAllTickersButton').onclick=()=>{hiddenTickers.clear();saveHiddenTickers();rerender();};
 $('hideAllEtfButton').onclick=()=>setTypeVisible('ETF',false);
 $('hideAllStockButton').onclick=()=>setTypeVisible('Stock',false);
-if($('hideAllFundButton'))$('hideAllFundButton').onclick=()=>setTypeVisible('Fund',false);
