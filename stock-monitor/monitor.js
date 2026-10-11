@@ -35,14 +35,13 @@ function formulaCell(value){return '<td style="mso-number-format:\'0.00%\'">'+ht
 function excelDate(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/-/g,'');}
 function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 function mobileBrowser(){return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||navigator.maxTouchPoints>1&&/Macintosh/i.test(navigator.userAgent);}
-function openExportPage(name,tableHtml){
- const page=window.open('','_blank');
- if(!page)return false;
- const fileHref='data:application/vnd.ms-excel;charset=utf-8,'+encodeURIComponent('<!doctype html><html><head><meta charset="utf-8"></head><body>'+tableHtml+'</body></html>');
- page.document.open();
- page.document.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+htmlEscape(name)+'</title><style>body{font-family:Arial,sans-serif;margin:16px;color:#17233c}.download{display:inline-flex;margin:0 0 12px;padding:12px 16px;border-radius:6px;background:#0072ff;color:white;text-decoration:none;font-weight:bold}.hint{font-size:13px;color:#556;line-height:1.5}table{border-collapse:collapse;font-size:12px;min-width:1100px}th,td{border:1px solid #999;padding:5px;white-space:nowrap}th{background:#eaf3ff}.wrap{overflow:auto}</style></head><body><a class="download" download="'+htmlEscape(name)+'" href="'+fileHref+'">Download Excel File</a><p class="hint">If your phone opens the table instead of downloading, use Share or Save to Files from your browser menu.</p><div class="wrap">'+tableHtml+'</div></body></html>');
- page.document.close();
- return true;
+function showExportPanel(name,html,tableHtml){
+ const link=$('exportDownloadLink'),panel=$('exportPanel');
+ $('exportPreview').innerHTML=tableHtml;
+ link.href='data:application/vnd.ms-excel;charset=utf-8,'+encodeURIComponent(html);
+ link.download=name;
+ panel.classList.add('open');
+ panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function exportExcel(){
  if(!exportRows.length){$('status').textContent='No monitor data loaded yet. Please wait for the page to finish loading.';return;}
@@ -50,7 +49,7 @@ function exportExcel(){
  const rows=exportRows.map((r,i)=>{const row=i+2,prevDayBase=valid(r.prev_close)&&valid(r.prev_day_pct_change)?r.prev_close/(1+r.prev_day_pct_change/100):null,prevDayFormula=valid(prevDayBase)?'=IFERROR(G'+row+'/'+prevDayBase+'-1,"")':'',currentFormula='=IFERROR(I'+row+'/G'+row+'-1,"")',drawdownFormula='=IFERROR(I'+row+'/K'+row+'-1,"")';return '<tr><td>'+(i+1)+'</td><td>'+htmlEscape(r.type)+'</td><td>'+htmlEscape(r.ticker)+'</td><td>'+htmlEscape(r.name)+'</td><td>'+htmlEscape(r.region)+'</td><td>'+htmlEscape(r.currency)+'</td><td>'+htmlEscape(excelNum(r.prev_close))+'</td>'+formulaCell(prevDayFormula)+'<td>'+htmlEscape(excelNum(r.current_price))+'</td>'+formulaCell(currentFormula)+'<td>'+htmlEscape(excelNum(r.ath))+'</td>'+formulaCell(drawdownFormula)+'<td>'+htmlEscape(sg(r.price_as_of))+'</td><td>'+htmlEscape(sg(r.price_retrieved_at))+'</td><td>'+htmlEscape(r.refresh_error?'Refresh failed':'OK')+'</td></tr>';}).join('');
  const tableHtml='<table><thead><tr>'+columns.map(c=>'<th>'+htmlEscape(c)+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
  const html='<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:5px}th{background:#eaf3ff}</style></head><body>'+tableHtml+'</body></html>',name='stock-monitor-'+excelDate()+'.xls';
- if(mobileBrowser()&&openExportPage(name,tableHtml)){$('status').textContent='Excel export opened in a new tab. Tap Download Excel File, or use Share / Save to Files if your phone opens the table.';return;}
+ if(mobileBrowser()){showExportPanel(name,html,tableHtml);$('status').textContent='Excel export preview is shown above. Tap Download Excel File, or use Share / Save to Files if your phone opens the table.';return;}
  download(name,html,'application/vnd.ms-excel;charset=utf-8');
  $('status').textContent='Excel export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .xls file.';
 }
