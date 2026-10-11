@@ -23,6 +23,7 @@ function toggleSettings(open){
 }
 function renderSettings(allActive){
  const list=$('settingsList');
+ if(!list)return;
  list.replaceChildren();
  for(const x of allActive){
   const label=document.createElement('label'),input=document.createElement('input'),text=document.createElement('span'),title=document.createElement('strong'),meta=document.createElement('span');
