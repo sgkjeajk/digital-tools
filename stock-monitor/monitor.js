@@ -111,7 +111,8 @@ for(const head of document.querySelectorAll('thead')){
  }
  head.append(tr);
 }
-$('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});window.addEventListener('focus',()=>refresh(false));refresh(false);
+$('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});
+if($('jumpFund'))$('jumpFund').onclick=()=>{const section=$('fundSection');if(section.style.display==='none'){$('status').textContent='No funds are currently shown. Add a fund in Admin, or turn it on in Settings.';return;}section.scrollIntoView({behavior:'smooth'});};window.addEventListener('focus',()=>refresh(false));refresh(false);
 $('exportExcelButton').onclick=exportExcel;
 $('settingsButton').onclick=()=>toggleSettings();
 $('settingsCloseButton').onclick=()=>toggleSettings(false);
