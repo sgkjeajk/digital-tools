@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 19,
+  "revision": 20,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-11T13:52:08.539Z",
+  "saved_at": "2026-10-11T14:44:27.793Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -171,6 +171,22 @@
       "region": "SES",
       "type": "Stock",
       "metadata_source": "Yahoo Finance quote webpage"
+    },
+    {
+      "ticker": "0P00009VED.SI",
+      "enabled": true,
+      "name": "Franklin Income A(Mdis)SGD-H1",
+      "region": "Singapore",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance fund page · 11 Oct 2026"
+    },
+    {
+      "ticker": "0P0000TZQ7.SI",
+      "enabled": true,
+      "name": "Schroder Asian Income SGD A Dis",
+      "region": "Singapore",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance fund page · 11 Oct 2026"
     },
     {
       "ticker": "0P0000Z32L.SI",
