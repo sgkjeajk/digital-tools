@@ -1,5 +1,11 @@
 {
-  "request_id": "73a2d29d-2cf6-4fd0-b8b8-89efda4fc619",
-  "generated_at": "2026-10-11T13:19:41.885004Z",
-  "error": "No verified Stock/ETF metadata on webpage."
+  "request_id": "1cb3559b-b27c-4ee4-9518-729c1e835eb7",
+  "generated_at": "2026-10-11T13:51:52.567858Z",
+  "instrument": {
+    "ticker": "0P0000Z32L.SI",
+    "name": "Allianz Income and Growth AMi3 H2 SGD",
+    "region": "SES",
+    "type": "Fund",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
 }
