@@ -64,13 +64,20 @@ function formulaCell(value){return '<td style="mso-number-format:\'0.00%\'">'+ht
 function excelDate(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/-/g,'');}
 function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 function exportExcel(){
- if(!exportRows.length){$('status').textContent=latestCfg?'No tickers are currently selected for display. Open Settings and show at least one ticker before exporting.':'No monitor data loaded yet. Please wait for the page to finish loading.';return;}
- const columns=['#','Category','Ticker','Name','Region / Market','Currency','Previous Close','Previous Day % Change','Current Price','Current % Change','All-Time High','Drawdown %','Market Time','Retrieved Time','Refresh Status'];
- const rows=exportRows.map((r,i)=>{const row=i+2,prevDayBase=valid(r.prev_close)&&valid(r.prev_day_pct_change)?r.prev_close/(1+r.prev_day_pct_change/100):null,prevDayFormula=valid(prevDayBase)?'=IFERROR(G'+row+'/'+prevDayBase+'-1,"")':'',currentFormula='=IFERROR(I'+row+'/G'+row+'-1,"")',drawdownFormula='=IFERROR(I'+row+'/K'+row+'-1,"")';return '<tr><td>'+(i+1)+'</td><td>'+htmlEscape(r.type)+'</td><td>'+htmlEscape(r.ticker)+'</td><td>'+htmlEscape(r.name)+'</td><td>'+htmlEscape(r.region)+'</td><td>'+htmlEscape(r.currency)+'</td><td>'+htmlEscape(excelNum(r.prev_close))+'</td>'+formulaCell(prevDayFormula)+'<td>'+htmlEscape(excelNum(r.current_price))+'</td>'+formulaCell(currentFormula)+'<td>'+htmlEscape(excelNum(r.ath))+'</td>'+formulaCell(drawdownFormula)+'<td>'+htmlEscape(sg(r.price_as_of))+'</td><td>'+htmlEscape(sg(r.price_retrieved_at))+'</td><td>'+htmlEscape(r.refresh_error?'Refresh failed':'OK')+'</td></tr>';}).join('');
- const tableHtml='<table><thead><tr>'+columns.map(c=>'<th>'+htmlEscape(c)+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
- const html='<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:5px}th{background:#eaf3ff}</style></head><body>'+tableHtml+'</body></html>',name='stock-monitor-'+excelDate()+'.xls';
- download(name,html,'application/vnd.ms-excel;charset=utf-8');
- $('status').textContent='Excel export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .xls file.';
+if(!exportRows.length){$('status').textContent=latestCfg?'No tickers are currently selected for display. Open Settings and show at least one ticker before exporting.':'No monitor data loaded yet. Please wait for the page to finish loading.';return;}
+if(!window.XlsxWriter){$('status').textContent='Excel export is unavailable because xlsx-writer.js did not load. Reload the page and try again.';return;}
+const columns=[['#',6],['Category',10],['Ticker',15],['Name',44],['Region / Market',16],['Currency',10],['Previous Close',14],['Previous Day % Change',15],['Current Price',13],['Current % Change',13],['All-Time High',14],['Drawdown %',12],['Market Time',26],['Retrieved Time',26],['Refresh Status',16]];
+const text=v=>({value:String(v??''),style:'text'}),num=v=>valid(v)?{value:v,style:'num'}:{style:'num'};
+const rows=exportRows.map((r,i)=>{
+const n=i+2,prevDayBase=valid(r.prev_close)&&valid(r.prev_day_pct_change)?r.prev_close/(1+r.prev_day_pct_change/100):null;
+const prevDay=valid(prevDayBase)&&prevDayBase!==0?{style:'pct',formula:'IFERROR(G'+n+'/'+prevDayBase+'-1,"")',value:r.prev_close/prevDayBase-1}:{style:'pct'};
+const current=valid(r.current_price)&&valid(r.prev_close)&&r.prev_close!==0?{style:'pct',formula:'IFERROR(I'+n+'/G'+n+'-1,"")',value:r.current_price/r.prev_close-1}:{style:'pct'};
+const drawdown=valid(r.current_price)&&valid(r.ath)&&r.ath!==0?{style:'pct',formula:'IFERROR(I'+n+'/K'+n+'-1,"")',value:r.current_price/r.ath-1}:{style:'pct'};
+return [{value:i+1,style:'int'},text(r.type),text(r.ticker),text(r.name),text(r.region),text(r.currency),num(r.prev_close),prevDay,num(r.current_price),current,num(r.ath),drawdown,text(sg(r.price_as_of)),text(sg(r.price_retrieved_at)),text(r.refresh_error?'Refresh failed':'OK')];
+});
+const blob=XlsxWriter.build({sheetName:'Stock Monitor',columns:columns.map(([header,width])=>({header,width})),rows}),name='stock-monitor-'+excelDate()+'.xlsx';
+download(name,blob,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+$('status').textContent='Excel (.xlsx) export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .xlsx file.';
 }
 function render(cfg,data){
  latestCfg=cfg;latestData=data;
