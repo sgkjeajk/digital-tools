@@ -10,9 +10,9 @@ on:
       - .github/workflows/stock-monitor.yml
       - .github/workflows/stock-monitor-watchdog.yml
   schedule:
-    # Off-peak launcher. GitHub cron is best effort. Testing mode currently
-    # runs an internal 5-cycle checker loop every 8 minutes.
-    - cron: '17 */3 * * *'
+    # Strong launch windows: 12:07 am and 12:07 pm SGT. GitHub cron is
+    # best effort, so these may start late.
+    - cron: '7 4,16 * * *'
     # Full historical highs: 08:23, 14:23 and 20:23 SGT, away from :00 load.
     - cron: '23 0,6,12 * * *'
   workflow_dispatch:
@@ -24,6 +24,11 @@ on:
         type: string
       requestId:
         description: Optional browser request correlation ID
+        required: false
+        default: ''
+        type: string
+      checkerCycles:
+        description: Optional checker cycle count
         required: false
         default: ''
         type: string
@@ -52,13 +57,18 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           LOOKUP_TICKER: ${{ inputs.lookupTicker }}
           REQUEST_ID: ${{ inputs.requestId }}
+          CHECKER_CYCLES: ${{ inputs.checkerCycles }}
           REFRESH_ATH: ${{ github.event_name != 'schedule' || github.event.schedule == '23 0,6,12 * * *' }}
         run: |
           run_count=1
           if [ -z "$LOOKUP_TICKER" ]; then
-            run_count=5
+            run_count="${CHECKER_CYCLES:-10}"
+            case "$run_count" in
+              ''|*[!0-9]*) run_count=10 ;;
+            esac
           fi
           if [ "$run_count" != "1" ]; then
+          export TOPUP_CHECKER_CYCLES="$run_count"
           python - <<'PY'
           import datetime as dt
           import json
@@ -70,6 +80,7 @@ jobs:
           repo = os.environ["REPO"]
           workflow = os.environ["WORKFLOW_FILE"]
           this_run = int(os.environ["RUN_ID"])
+          topup_cycles = os.environ.get("TOPUP_CHECKER_CYCLES", "10")
           launch_threshold = 3
           headers = {
               "Accept": "application/vnd.github+json",
@@ -108,8 +119,8 @@ jobs:
           if count <= launch_threshold:
               dispatch_url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
               request_id = "selftopup-" + dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S%f")
-              request("POST", dispatch_url, {"ref": "main", "inputs": {"lookupTicker": "", "requestId": request_id}})
-              print(f"Dispatched one extra 5x price checker: {request_id}")
+              request("POST", dispatch_url, {"ref": "main", "inputs": {"lookupTicker": "", "requestId": request_id, "checkerCycles": topup_cycles}})
+              print(f"Dispatched one extra {topup_cycles}x price checker: {request_id}")
           else:
               print("More than 3 active price-checker runs found; no extra checker dispatched.")
           PY
