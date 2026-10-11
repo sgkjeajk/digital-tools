@@ -53,9 +53,9 @@ def lookup(ticker):
         kind=data.get('quoteType')
         name=data.get('longName') or data.get('shortName')
         market=data.get('fullExchangeName') or data.get('exchange')
-        if kind not in ('ETF','EQUITY','MUTUALFUND') or not name or not market:
-            raise ValueError('No verified Stock/ETF/Fund metadata on webpage.')
-        return {'ticker':ticker,'name':name,'region':market,'type':'ETF' if kind=='ETF' else 'Fund' if kind=='MUTUALFUND' else 'Stock','metadata_source':'Yahoo Finance quote webpage'}
+        if kind not in ('ETF','EQUITY') or not name or not market:
+            raise ValueError('No verified Stock/ETF metadata on webpage.')
+        return {'ticker':ticker,'name':name,'region':market,'type':'ETF' if kind=='ETF' else 'Stock','metadata_source':'Yahoo Finance quote webpage'}
     x=CATALOG[ticker]
     return {'ticker':ticker,'name':x['name'],'region':x['market'],'type':x['type'],'metadata_source':x['source']}
 
@@ -71,12 +71,12 @@ def validate(data):
         t=symbol(x.get('ticker'))
         if t in seen: raise ValueError('Duplicate ticker: '+t)
         seen.add(t)
-        if all(isinstance(x.get(k),str) and x.get(k).strip() for k in ('name','region','type','metadata_source')) and x['type'] in ('ETF','Stock','Fund'):
+        if all(isinstance(x.get(k),str) and x.get(k).strip() for k in ('name','region','type','metadata_source')) and x['type'] in ('ETF','Stock'):
             meta={'ticker':t,'name':x['name'].strip(),'region':x['region'].strip(),'type':x['type'],'metadata_source':x['metadata_source'].strip()}
         else:
             meta=lookup(t)
         result.append({**meta,'enabled':x['enabled']})
-    result.sort(key=lambda x:({'ETF':0,'Stock':1,'Fund':2}.get(x['type'],3),x['ticker']))
+    result.sort(key=lambda x:(x['type']!='ETF',x['ticker']))
     return {'version':1,'refreshIntervalMinutes':interval,'instruments':result}
 
 def save_config(data):
@@ -135,6 +135,8 @@ def quote_chart(ticker):
             if meta.get('currency')!=expected: raise ValueError('Unexpected quote currency')
             cur=meta.get('regularMarketPrice')
             prev=meta.get('previousClose')
+            if not finite(prev):
+                prev=meta.get('chartPreviousClose')
             stamp=meta.get('regularMarketTime')
             if not finite(cur) or cur<=0 or not finite(prev) or prev<=0: raise ValueError('Missing regular price or previous close')
             if not finite(stamp) or stamp<=0: raise ValueError('Missing original market quote timestamp')
