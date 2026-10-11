@@ -73,8 +73,8 @@ function showExportPanel(name,html,tableHtml,csv){
  $('exportPreview').innerHTML=tableHtml;
  clearExportUrls();
  const viewLink=$('exportViewLink');viewLink.href='#exportPreview';viewLink.removeAttribute('download');
- makeBlobLink('exportCsvLink','\ufeff'+csv,'text/csv;charset=utf-8',name.replace(/\.xls$/i,'.csv'));
- makeBlobLink('exportDownloadLink',html,'application/vnd.ms-excel;charset=utf-8',name);
+ makeBlobLink('exportCsvLink','\ufeff'+csv,'text/csv;charset=utf-8',name);
+ const excelLink=document.getElementById('exportDownloadLink');if(excelLink){excelLink.hidden=true;excelLink.style.display='none';excelLink.removeAttribute('href');excelLink.removeAttribute('download');}
  panel.classList.add('open');
  panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -88,10 +88,10 @@ function exportExcel(){
  const rows=exportRows.map((r,i)=>{const row=i+2,prevDayBase=valid(r.prev_close)&&valid(r.prev_day_pct_change)?r.prev_close/(1+r.prev_day_pct_change/100):null,prevDayFormula=valid(prevDayBase)?'=IFERROR(G'+row+'/'+prevDayBase+'-1,"")':'',currentFormula='=IFERROR(I'+row+'/G'+row+'-1,"")',drawdownFormula='=IFERROR(I'+row+'/K'+row+'-1,"")';return '<tr><td>'+(i+1)+'</td><td>'+htmlEscape(r.type)+'</td><td>'+htmlEscape(r.ticker)+'</td><td>'+htmlEscape(r.name)+'</td><td>'+htmlEscape(r.region)+'</td><td>'+htmlEscape(r.currency)+'</td><td>'+htmlEscape(excelNum(r.prev_close))+'</td>'+formulaCell(prevDayFormula)+'<td>'+htmlEscape(excelNum(r.current_price))+'</td>'+formulaCell(currentFormula)+'<td>'+htmlEscape(excelNum(r.ath))+'</td>'+formulaCell(drawdownFormula)+'<td>'+htmlEscape(sg(r.price_as_of))+'</td><td>'+htmlEscape(sg(r.price_retrieved_at))+'</td><td>'+htmlEscape(r.refresh_error?'Refresh failed':'OK')+'</td></tr>';}).join('');
  const csvRows=exportRows.map((r,i)=>[i+1,r.type,r.ticker,r.name,r.region,r.currency,excelNum(r.prev_close),valid(r.prev_day_pct_change)?r.prev_day_pct_change:'',excelNum(r.current_price),valid(r.current_pct_change)?r.current_pct_change:'',excelNum(r.ath),valid(r.drawdown_pct)?r.drawdown_pct:'',sg(r.price_as_of),sg(r.price_retrieved_at),r.refresh_error?'Refresh failed':'OK'].map(csvCell).join(',')).join('\n');
  const tableHtml='<table><thead><tr>'+columns.map(c=>'<th>'+htmlEscape(c)+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
- const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stock Monitor Export</title><style>body{font-family:Arial,sans-serif;margin:16px;color:#080873}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #999;padding:6px;text-align:left}th{background:#eaf3ff}td:nth-child(n+7){text-align:right}@media(max-width:700px){body{margin:10px}table{font-size:12px}}</style></head><body><h1>Stock Monitor Export</h1>'+tableHtml+'</body></html>',name='stock-monitor-'+excelDate()+'.xls',csv=columns.map(csvCell).join(',')+'\n'+csvRows;
- if(mobileBrowser()){showExportPanel(name,html,tableHtml,csv);$('status').textContent='Export preview is shown above. On iPhone, the preview stays on this page. Tap Download CSV if you need a file. Use Download Excel File only if you have Excel/Numbers available.';return;}
- download(name,html,'application/vnd.ms-excel;charset=utf-8');
- $('status').textContent='Excel export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .xls file.';
+ const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stock Monitor Export</title><style>body{font-family:Arial,sans-serif;margin:16px;color:#080873}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #999;padding:6px;text-align:left}th{background:#eaf3ff}td:nth-child(n+7){text-align:right}@media(max-width:700px){body{margin:10px}table{font-size:12px}}</style></head><body><h1>Stock Monitor Export</h1>'+tableHtml+'</body></html>',name='stock-monitor-'+excelDate()+'.csv',csv=columns.map(csvCell).join(',')+'\n'+csvRows;
+ if(mobileBrowser()){showExportPanel(name,html,tableHtml,csv);$('status').textContent='Export preview is shown above. On iPhone, the preview stays on this page. Tap Download CSV if you need a file.';return;}
+ download(name,'\ufeff'+csv,'text/csv;charset=utf-8');
+ $('status').textContent='CSV export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .csv file.';
 }
 function render(cfg,data){
  latestCfg=cfg;latestData=data;
