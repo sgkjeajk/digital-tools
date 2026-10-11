@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id), valid=n=>typeof n==='number'&&Number.isFinite(n), fmt=n=>valid(n)?n.toFixed(2):'—', pct=n=>valid(n)?(n>=0?'+':'')+n.toFixed(2)+'%':'—', cls=n=>valid(n)&&n>0?'pos':valid(n)&&n<0?'neg':'';
 const sg=t=>t&&!Number.isNaN(Date.parse(t))?new Intl.DateTimeFormat('en-SG',{timeZone:'Asia/Singapore',dateStyle:'medium',timeStyle:'short'}).format(new Date(t))+' SGT':'Not yet retrieved';
 const HIDDEN_TICKERS_KEY='stockMonitorHiddenTickers';
-let interval, running=false, exportRows=[], latestCfg=null, latestData=null, hiddenTickers=loadHiddenTickers();
+let interval, running=false, exportRows=[], latestCfg=null, latestData=null, hiddenTickers=loadHiddenTickers(), exportBlobUrl=null;
 const tableSort={ETF:{key:null,dir:'asc'},Stock:{key:null,dir:'asc'}};
 function loadHiddenTickers(){
  try{const saved=JSON.parse(localStorage.getItem(HIDDEN_TICKERS_KEY)||'[]');return new Set(Array.isArray(saved)?saved:[]);}
@@ -66,10 +66,16 @@ function mobileBrowser(){return /Android|iPhone|iPad|iPod/i.test(navigator.userA
 function showExportPanel(name,html,tableHtml){
  const link=$('exportDownloadLink'),panel=$('exportPanel');
  $('exportPreview').innerHTML=tableHtml;
- link.href='data:application/vnd.ms-excel;charset=utf-8,'+encodeURIComponent(html);
+ if(exportBlobUrl)URL.revokeObjectURL(exportBlobUrl);
+ exportBlobUrl=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8'}));
+ link.href=exportBlobUrl;
  link.download=name;
  panel.classList.add('open');
  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeExportPanel(){
+ $('exportPanel').classList.remove('open');
+ if(exportBlobUrl){URL.revokeObjectURL(exportBlobUrl);exportBlobUrl=null;}
 }
 function exportExcel(){
  if(!exportRows.length){$('status').textContent=latestCfg?'No tickers are currently selected for display. Open Settings and show at least one ticker before exporting.':'No monitor data loaded yet. Please wait for the page to finish loading.';return;}
@@ -115,6 +121,7 @@ for(const head of document.querySelectorAll('thead')){
 }
 $('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});window.addEventListener('focus',()=>refresh(false));refresh(false);
 $('exportExcelButton').onclick=exportExcel;
+$('exportCloseButton').onclick=closeExportPanel;
 $('settingsButton').onclick=()=>toggleSettings();
 $('settingsCloseButton').onclick=()=>toggleSettings(false);
 $('showAllTickersButton').onclick=()=>{hiddenTickers.clear();saveHiddenTickers();rerender();};
