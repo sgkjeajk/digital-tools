@@ -1,56 +1,73 @@
 name: Stock Monitor Watchdog
 on:
   schedule:
-    # Backup launcher offset from the main updater. One successful launch runs
-    # an internal 30-cycle checker loop every 8 minutes.
+    # Smaller backup launcher. It requests a 5-cycle checker only when fewer
+    # than 3 stock-monitor checker runs are already queued or running.
     - cron: '43 */3 * * *'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
+  actions: write
 concurrency:
-  group: stock-etf-monitor-update
+  group: stock-etf-monitor-watchdog-launcher
   cancel-in-progress: false
 jobs:
-  update:
+  launch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Run scheduled stock monitor heartbeat
+      - name: Dispatch price checker when active queue is below limit
         env:
-          TRIGGER_EVENT: schedule
-          REFRESH_ATH: false
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          WORKFLOW_FILE: stock-monitor.yml
+          MAX_ACTIVE_CHECKERS: '3'
         run: |
-          run_count=30
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git fetch origin main
-          if git show origin/main:market-data.json > /tmp/market-data.json 2>/dev/null; then
-            if python -c "import datetime as dt, json, sys; data=json.load(open('/tmp/market-data.json', encoding='utf-8')); timestamp=data.get('last_check_completed_at') or data.get('generated_at'); checked_at=dt.datetime.fromisoformat(timestamp.replace('Z', '+00:00')) if timestamp else None; age=(dt.datetime.now(dt.timezone.utc)-checked_at).total_seconds() if checked_at else 999999; print(f'Latest stock monitor check age: {age / 60:.1f} minutes'); sys.exit(0 if age < 120 else 1)"
-            then
-              echo 'Very recent successful check found; queued watchdog run can stop.'
-              exit 0
-            fi
-          fi
-          for attempt in $(seq 1 "$run_count"); do
-            echo "Stock monitor watchdog checker cycle $attempt of $run_count"
-            python scripts/github_market_update.py
-            git fetch origin main
-            if [ "$(git rev-parse HEAD:data/stock-tickers.json)" != "$(git rev-parse origin/main:data/stock-tickers.json)" ]; then
-              echo 'A newer configuration exists; its queued update will handle prices.'
-              exit 0
-            fi
-            git add market-data.json data/stock-monitor.json
-            if ! git diff --cached --quiet; then
-              git commit -m 'Update Stock Monitor watchdog heartbeat'
-              git pull --rebase origin main
-              git push origin HEAD:main
-            fi
-            if [ "$attempt" -lt "$run_count" ]; then
-              sleep 480
-            fi
-          done
+          python - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          token = os.environ["GH_TOKEN"]
+          repo = os.environ["REPO"]
+          workflow = os.environ["WORKFLOW_FILE"]
+          limit = int(os.environ.get("MAX_ACTIVE_CHECKERS", "3"))
+          headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {token}",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+
+          def request(method, url, body=None):
+              data = None if body is None else json.dumps(body).encode("utf-8")
+              req = urllib.request.Request(url, data=data, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as response:
+                      content = response.read().decode("utf-8")
+                      return json.loads(content) if content else {}
+              except urllib.error.HTTPError as exc:
+                  detail = exc.read().decode("utf-8", "replace")
+                  raise SystemExit(f"GitHub API {method} {url} failed: {exc.code} {detail}")
+
+          base = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/runs"
+          active = []
+          for status in ("queued", "in_progress"):
+              payload = request("GET", f"{base}?status={status}&per_page=100")
+              active.extend(payload.get("workflow_runs", []))
+
+          unique = {run["id"]: run for run in active}
+          count = len(unique)
+          print(f"Active stock monitor price-checker runs: {count} / {limit}")
+          for run in sorted(unique.values(), key=lambda x: x.get("created_at", "")):
+              print(f"- {run['id']} {run['status']} {run.get('event')} {run.get('created_at')} {run.get('html_url')}")
+
+          if count >= limit:
+              print("Queue limit reached; no new 5x price checker dispatched.")
+              raise SystemExit(0)
+
+          request_id = "watchdog-" + dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
+          dispatch_url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
+          request("POST", dispatch_url, {"ref": "main", "inputs": {"lookupTicker": "", "requestId": request_id, "checkerCycles": "5"}})
+          print(f"Dispatched one new 5x price checker: {request_id}")
+          PY
