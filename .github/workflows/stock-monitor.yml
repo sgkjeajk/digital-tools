@@ -70,7 +70,7 @@ jobs:
           repo = os.environ["REPO"]
           workflow = os.environ["WORKFLOW_FILE"]
           this_run = int(os.environ["RUN_ID"])
-          limit = 3
+          launch_threshold = 3
           headers = {
               "Accept": "application/vnd.github+json",
               "Authorization": f"Bearer {token}",
@@ -95,7 +95,7 @@ jobs:
               active.extend(payload.get("workflow_runs", []))
           unique = {run["id"]: run for run in active}
           count = len(unique)
-          print(f"Active stock monitor price-checker runs before top-up: {count} / {limit}")
+          print(f"Active stock monitor price-checker runs before top-up: {count}; launch threshold: <= {launch_threshold}")
           for run in sorted(unique.values(), key=lambda x: x.get("created_at", "")):
               print(f"- {run['id']} {run['status']} {run.get('event')} {run.get('created_at')} {run.get('html_url')}")
 
@@ -105,12 +105,13 @@ jobs:
               print("Another older active checker can handle queue top-up.")
               raise SystemExit(0)
 
-          dispatch_url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
-          for _ in range(max(0, limit - count)):
+          if count <= launch_threshold:
+              dispatch_url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
               request_id = "selftopup-" + dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S%f")
               request("POST", dispatch_url, {"ref": "main", "inputs": {"lookupTicker": "", "requestId": request_id}})
-              count += 1
-              print(f"Dispatched extra 30x price checker: {request_id}; active target now {count} / {limit}")
+              print(f"Dispatched one extra 30x price checker: {request_id}")
+          else:
+              print("More than 3 active price-checker runs found; no extra checker dispatched.")
           PY
           fi
           git config user.name 'github-actions[bot]'
