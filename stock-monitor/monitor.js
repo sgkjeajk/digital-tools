@@ -33,7 +33,7 @@ function renderSettings(allActive){
  if(!allActive.length){const empty=document.createElement('p');empty.textContent='No enabled tickers found.';list.append(empty);}
 }
 function sortTable(type){
- const tbody=$(type==='ETF'?'etfRows':'stockRows'),state=tableSort[type];
+ const tbody=tableBody(type==='ETF'?'etfRows':'stockRows',type==='ETF'?'etfSection':'stockSection'),state=tableSort[type];
  if(state.key){
   const rows=[...tbody.querySelectorAll('tr[data-ticker]')];
   rows.sort((a,b)=>{
