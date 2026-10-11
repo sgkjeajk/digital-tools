@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 18,
+  "revision": 19,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-10T22:07:54.276Z",
+  "saved_at": "2026-10-11T13:52:08.539Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -170,6 +170,14 @@
       "name": "Singapore Telecommunications Limited",
       "region": "SES",
       "type": "Stock",
+      "metadata_source": "Yahoo Finance quote webpage"
+    },
+    {
+      "ticker": "0P0000Z32L.SI",
+      "enabled": true,
+      "name": "Allianz Income and Growth AMi3 H2 SGD",
+      "region": "SES",
+      "type": "Fund",
       "metadata_source": "Yahoo Finance quote webpage"
     }
   ]
