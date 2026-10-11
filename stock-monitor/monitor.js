@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id), valid=n=>typeof n==='number'&&Number.isFinite(n), fmt=n=>valid(n)?n.toFixed(2):'—', pct=n=>valid(n)?(n>=0?'+':'')+n.toFixed(2)+'%':'—', cls=n=>valid(n)&&n>0?'pos':valid(n)&&n<0?'neg':'';
 const sg=t=>t&&!Number.isNaN(Date.parse(t))?new Intl.DateTimeFormat('en-SG',{timeZone:'Asia/Singapore',dateStyle:'medium',timeStyle:'short'}).format(new Date(t))+' SGT':'Not yet retrieved';
 const HIDDEN_TICKERS_KEY='stockMonitorHiddenTickers';
-let interval, running=false, exportRows=[], latestCfg=null, latestData=null, hiddenTickers=loadHiddenTickers(), exportBlobUrls=[];
+let interval, running=false, exportRows=[], latestCfg=null, latestData=null, hiddenTickers=loadHiddenTickers();
 const tableSort={ETF:{key:null,dir:'asc'},Stock:{key:null,dir:'asc'}};
 function loadHiddenTickers(){
  try{const saved=JSON.parse(localStorage.getItem(HIDDEN_TICKERS_KEY)||'[]');return new Set(Array.isArray(saved)?saved:[]);}
@@ -62,36 +62,14 @@ function excelNum(value){return valid(value)?String(value):'';}
 function formulaCell(value){return '<td style="mso-number-format:\'0.00%\'">'+htmlEscape(value)+'</td>';}
 function excelDate(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/-/g,'');}
 function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-function mobileBrowser(){return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||navigator.maxTouchPoints>1&&/Macintosh/i.test(navigator.userAgent);}
-function csvCell(value){const s=String(value??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
-function clearExportUrls(){for(const url of exportBlobUrls)URL.revokeObjectURL(url);exportBlobUrls=[];}
-function makeBlobLink(id,content,type,name){
- const link=$(id),url=URL.createObjectURL(new Blob([content],{type}));exportBlobUrls.push(url);link.href=url;if(name)link.download=name;return link;
-}
-function showExportPanel(name,html,tableHtml,csv){
- const panel=$('exportPanel');
- $('exportPreview').innerHTML=tableHtml;
- clearExportUrls();
- const viewLink=$('exportViewLink');viewLink.href='#exportPreview';viewLink.removeAttribute('download');
- makeBlobLink('exportCsvLink','\ufeff'+csv,'text/csv;charset=utf-8',name);
- const excelLink=document.getElementById('exportDownloadLink');if(excelLink){excelLink.hidden=true;excelLink.style.display='none';excelLink.removeAttribute('href');excelLink.removeAttribute('download');}
- panel.classList.add('open');
- panel.scrollIntoView({behavior:'smooth',block:'start'});
-}
-function closeExportPanel(){
- $('exportPanel').classList.remove('open');
- clearExportUrls();
-}
 function exportExcel(){
  if(!exportRows.length){$('status').textContent=latestCfg?'No tickers are currently selected for display. Open Settings and show at least one ticker before exporting.':'No monitor data loaded yet. Please wait for the page to finish loading.';return;}
  const columns=['#','Category','Ticker','Name','Region / Market','Currency','Previous Close','Previous Day % Change','Current Price','Current % Change','All-Time High','Drawdown %','Market Time','Retrieved Time','Refresh Status'];
  const rows=exportRows.map((r,i)=>{const row=i+2,prevDayBase=valid(r.prev_close)&&valid(r.prev_day_pct_change)?r.prev_close/(1+r.prev_day_pct_change/100):null,prevDayFormula=valid(prevDayBase)?'=IFERROR(G'+row+'/'+prevDayBase+'-1,"")':'',currentFormula='=IFERROR(I'+row+'/G'+row+'-1,"")',drawdownFormula='=IFERROR(I'+row+'/K'+row+'-1,"")';return '<tr><td>'+(i+1)+'</td><td>'+htmlEscape(r.type)+'</td><td>'+htmlEscape(r.ticker)+'</td><td>'+htmlEscape(r.name)+'</td><td>'+htmlEscape(r.region)+'</td><td>'+htmlEscape(r.currency)+'</td><td>'+htmlEscape(excelNum(r.prev_close))+'</td>'+formulaCell(prevDayFormula)+'<td>'+htmlEscape(excelNum(r.current_price))+'</td>'+formulaCell(currentFormula)+'<td>'+htmlEscape(excelNum(r.ath))+'</td>'+formulaCell(drawdownFormula)+'<td>'+htmlEscape(sg(r.price_as_of))+'</td><td>'+htmlEscape(sg(r.price_retrieved_at))+'</td><td>'+htmlEscape(r.refresh_error?'Refresh failed':'OK')+'</td></tr>';}).join('');
- const csvRows=exportRows.map((r,i)=>[i+1,r.type,r.ticker,r.name,r.region,r.currency,excelNum(r.prev_close),valid(r.prev_day_pct_change)?r.prev_day_pct_change:'',excelNum(r.current_price),valid(r.current_pct_change)?r.current_pct_change:'',excelNum(r.ath),valid(r.drawdown_pct)?r.drawdown_pct:'',sg(r.price_as_of),sg(r.price_retrieved_at),r.refresh_error?'Refresh failed':'OK'].map(csvCell).join(',')).join('\n');
  const tableHtml='<table><thead><tr>'+columns.map(c=>'<th>'+htmlEscape(c)+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
- const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stock Monitor Export</title><style>body{font-family:Arial,sans-serif;margin:16px;color:#080873}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #999;padding:6px;text-align:left}th{background:#eaf3ff}td:nth-child(n+7){text-align:right}@media(max-width:700px){body{margin:10px}table{font-size:12px}}</style></head><body><h1>Stock Monitor Export</h1>'+tableHtml+'</body></html>',name='stock-monitor-'+excelDate()+'.csv',csv=columns.map(csvCell).join(',')+'\n'+csvRows;
- if(mobileBrowser()){showExportPanel(name,html,tableHtml,csv);$('status').textContent='Export preview is shown above. On iPhone, the preview stays on this page. Tap Download CSV if you need a file.';return;}
- download(name,'\ufeff'+csv,'text/csv;charset=utf-8');
- $('status').textContent='CSV export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .csv file.';
+ const html='<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:5px}th{background:#eaf3ff}</style></head><body>'+tableHtml+'</body></html>',name='stock-monitor-'+excelDate()+'.xls';
+ download(name,html,'application/vnd.ms-excel;charset=utf-8');
+ $('status').textContent='Excel export requested: '+exportRows.length+' instruments sorted by category and ticker. Check your browser downloads for the .xls file.';
 }
 function render(cfg,data){
  latestCfg=cfg;latestData=data;
@@ -127,7 +105,6 @@ for(const head of document.querySelectorAll('thead')){
 }
 $('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});window.addEventListener('focus',()=>refresh(false));refresh(false);
 $('exportExcelButton').onclick=exportExcel;
-$('exportCloseButton').onclick=closeExportPanel;
 $('settingsButton').onclick=()=>toggleSettings();
 $('settingsCloseButton').onclick=()=>toggleSettings(false);
 $('showAllTickersButton').onclick=()=>{hiddenTickers.clear();saveHiddenTickers();rerender();};
