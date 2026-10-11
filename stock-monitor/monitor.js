@@ -3,7 +3,8 @@ const $=id=>document.getElementById(id), valid=n=>typeof n==='number'&&Number.is
 const sg=t=>t&&!Number.isNaN(Date.parse(t))?new Intl.DateTimeFormat('en-SG',{timeZone:'Asia/Singapore',dateStyle:'medium',timeStyle:'short'}).format(new Date(t))+' SGT':'Not yet retrieved';
 const HIDDEN_TICKERS_KEY='stockMonitorHiddenTickers';
 let interval, running=false, exportRows=[], latestCfg=null, latestData=null, hiddenTickers=loadHiddenTickers();
-const tableSort={ETF:{key:null,dir:'asc'},Stock:{key:null,dir:'asc'}};
+const IDS={ETF:'etf',Stock:'stock',Fund:'fund'};
+const tableSort={ETF:{key:null,dir:'asc'},Stock:{key:null,dir:'asc'},Fund:{key:null,dir:'asc'}};
 function loadHiddenTickers(){
  try{const saved=JSON.parse(localStorage.getItem(HIDDEN_TICKERS_KEY)||'[]');return new Set(Array.isArray(saved)?saved:[]);}
  catch{return new Set();}
@@ -32,7 +33,7 @@ function renderSettings(allActive){
  if(!allActive.length){const empty=document.createElement('p');empty.textContent='No enabled tickers found.';list.append(empty);}
 }
 function sortTable(type){
- const tbody=$(type==='ETF'?'etfRows':'stockRows'),state=tableSort[type];
+ const tbody=$(IDS[type]+'Rows'),state=tableSort[type];
  if(state.key){
   const rows=[...tbody.querySelectorAll('tr[data-ticker]')];
   rows.sort((a,b)=>{
@@ -43,7 +44,7 @@ function sortTable(type){
   });
   tbody.append(...rows);
  }
- const section=$(type==='ETF'?'etfSection':'stockSection');
+ const section=$(IDS[type]+'Section');
  for(const th of section.querySelectorAll('th[data-sort-key]')){
   const selected=th.dataset.sortKey===state.key;
   th.setAttribute('aria-sort',selected?(state.dir==='asc'?'ascending':'descending'):'none');
@@ -74,14 +75,14 @@ function exportExcel(){
 function render(cfg,data){
  latestCfg=cfg;latestData=data;
  const prices=new Map((data.instruments||[]).map(x=>[x.ticker,x]));
- const allActive=cfg.instruments.filter(x=>x.enabled).sort((a,b)=>(a.type==='ETF'?0:1)-(b.type==='ETF'?0:1)||a.ticker.localeCompare(b.ticker));
+ const allActive=cfg.instruments.filter(x=>x.enabled).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
  renderSettings(allActive);
  const active=allActive.filter(x=>!hiddenTickers.has(x.ticker));
  exportRows=active.map(x=>({...x,...(prices.get(x.ticker)||{})}));
- $('etfRows').replaceChildren();$('stockRows').replaceChildren();let successful=[];
- for(const x of active){const q=prices.get(x.ticker)||{},tr=document.createElement('tr');tr.dataset.ticker=x.ticker;tr.dataset.region=x.region||'';const tickerCell=cell(tr,'');const tickerLink=document.createElement('a');tickerLink.textContent=x.ticker;tickerLink.href='https://finance.yahoo.com/quote/'+encodeURIComponent(x.ticker)+'/';tickerLink.target='_blank';tickerLink.rel='noopener noreferrer';tickerLink.setAttribute('aria-label',x.ticker+' on Yahoo Finance (opens in a new tab)');tickerCell.append(tickerLink);cell(tr,x.region);const name=cell(tr,x.name+(q.currency?' ('+q.currency+')':''));const note=document.createElement('small');note.className='row-note';note.textContent=q.refresh_error?'Refresh failed · '+sg(q.price_as_of):q.price_as_of?'Market time: '+sg(q.price_as_of):'Price pending';if(q.ath_error)note.textContent+=' · Using saved ATH — latest update failed.';name.append(note);if(q.price_retrieved_at&&!q.refresh_error)successful.push(q.price_retrieved_at);cell(tr,fmt(q.prev_close));cell(tr,pct(q.prev_day_pct_change),cls(q.prev_day_pct_change));cell(tr,fmt(q.current_price));cell(tr,pct(q.current_pct_change),cls(q.current_pct_change));const ath=cell(tr,fmt(q.ath));if(q.ath_error){ath.title=q.ath_error;ath.className='warning';}cell(tr,pct(q.drawdown_pct),cls(q.drawdown_pct));$(x.type==='ETF'?'etfRows':'stockRows').append(tr);}
- for(const [type,id] of [['ETF','etf'],['Stock','stock']]){const allCount=allActive.filter(x=>x.type===type).length,count=active.filter(x=>x.type===type).length,hidden=allCount-count,section=$(id+'Section');section.style.display=count?'':'none';$(id+'Count').textContent='Total '+(type==='ETF'?'ETFs':'Stocks')+': '+count+(hidden?' · '+hidden+' hidden':'');}
- sortTable('ETF');sortTable('Stock');
+ $('etfRows').replaceChildren();$('stockRows').replaceChildren();$('fundRows').replaceChildren();let successful=[];
+ for(const x of active){const q=prices.get(x.ticker)||{},tr=document.createElement('tr');tr.dataset.ticker=x.ticker;tr.dataset.region=x.region||'';const tickerCell=cell(tr,'');const tickerLink=document.createElement('a');tickerLink.textContent=x.ticker;tickerLink.href='https://finance.yahoo.com/quote/'+encodeURIComponent(x.ticker)+'/';tickerLink.target='_blank';tickerLink.rel='noopener noreferrer';tickerLink.setAttribute('aria-label',x.ticker+' on Yahoo Finance (opens in a new tab)');tickerCell.append(tickerLink);cell(tr,x.region);const name=cell(tr,x.name+(q.currency?' ('+q.currency+')':''));const note=document.createElement('small');note.className='row-note';note.textContent=q.refresh_error?'Refresh failed · '+sg(q.price_as_of):q.price_as_of?'Market time: '+sg(q.price_as_of):'Price pending';if(q.ath_error)note.textContent+=' · Using saved ATH — latest update failed.';name.append(note);if(q.price_retrieved_at&&!q.refresh_error)successful.push(q.price_retrieved_at);cell(tr,fmt(q.prev_close));cell(tr,pct(q.prev_day_pct_change),cls(q.prev_day_pct_change));cell(tr,fmt(q.current_price));cell(tr,pct(q.current_pct_change),cls(q.current_pct_change));const ath=cell(tr,fmt(q.ath));if(q.ath_error){ath.title=q.ath_error;ath.className='warning';}cell(tr,pct(q.drawdown_pct),cls(q.drawdown_pct));$((IDS[x.type]||'stock')+'Rows').append(tr);}
+ for(const [type,id] of [['ETF','etf'],['Stock','stock'],['Fund','fund']]){const allCount=allActive.filter(x=>x.type===type).length,count=active.filter(x=>x.type===type).length,hidden=allCount-count,section=$(id+'Section');section.style.display=count?'':'none';$(id+'Count').textContent='Total '+(type==='ETF'?'ETFs':type==='Fund'?'Funds':'Stocks')+': '+count+(hidden?' · '+hidden+' hidden':'');}
+ sortTable('ETF');sortTable('Stock');sortTable('Fund');
  const latestPriceTime=successful.sort().at(-1)||allActive.map(x=>prices.get(x.ticker)?.price_retrieved_at).filter(Boolean).sort().at(-1),hiddenCount=allActive.length-active.length;
  $('reference-time').textContent=sg(data.last_check_completed_at||data.generated_at||latestPriceTime);$('tracked').textContent=active.length+' shown'+(hiddenCount?' · '+hiddenCount+' hidden':'')+' · '+allActive.length+' total instruments';
  clearInterval(interval);interval=setInterval(()=>refresh(false),Math.max(5,Math.min(10,cfg.refreshIntervalMinutes||10))*60000);
@@ -90,7 +91,7 @@ function render(cfg,data){
 async function load(){const [cfg,data]=await Promise.all([get('../data/stock-tickers.json'),get('../market-data.json')]);return render(cfg,data);}
 async function refresh(){if(running)return;running=true;try{const rows=await load();const failed=rows.filter(x=>x.refresh_error).length;$('status').textContent=failed?failed+' ticker(s) could not be updated; their saved prices and timestamps are retained.':'Latest saved data loaded. Last refresh & check completed: '+$('reference-time').textContent+'.';}catch(e){$('status').textContent=e.message;}finally{running=false;}}
 for(const head of document.querySelectorAll('thead')){
- const type=head.closest('#etfSection')?'ETF':'Stock',tr=document.createElement('tr');
+ const type=head.closest('#etfSection')?'ETF':head.closest('#fundSection')?'Fund':'Stock',tr=document.createElement('tr');
  for(const text of ['Ticker','Region / Market','Stock / ETF Name','Prev Day Close','Prev Day % Chg','Current Price','Current % Chg','All-Time High','Drawdown %']){
   const th=document.createElement('th');
   if(text==='Ticker'||text==='Region / Market'){
@@ -110,3 +111,4 @@ $('settingsCloseButton').onclick=()=>toggleSettings(false);
 $('showAllTickersButton').onclick=()=>{hiddenTickers.clear();saveHiddenTickers();rerender();};
 $('hideAllEtfButton').onclick=()=>setTypeVisible('ETF',false);
 $('hideAllStockButton').onclick=()=>setTypeVisible('Stock',false);
+if($('hideAllFundButton'))$('hideAllFundButton').onclick=()=>setTypeVisible('Fund',false);
