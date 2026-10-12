@@ -37,6 +37,9 @@ class ValidateConfigTests(unittest.TestCase):
         self.assertEqual(result["instruments"][0]["ticker"], "SHEL")
         self.assertEqual(result["instruments"][0]["name"], "Shell plc")
         self.assertEqual(result["instruments"][0]["type"], "Stock")
+        self.assertEqual(result["priceChecker"]["cycles"], 30)
+        self.assertEqual(result["priceChecker"]["intervalMinutes"], 8)
+        self.assertTrue(result["priceChecker"]["categories"]["Fund"])
 
     def test_ticker_only_entry_still_uses_lookup(self):
         calls = []
@@ -65,6 +68,43 @@ class ValidateConfigTests(unittest.TestCase):
         self.assertEqual(calls, ["AAPL"])
         self.assertEqual(result["instruments"][0]["ticker"], "AAPL")
         self.assertFalse(result["instruments"][0]["enabled"])
+
+    def test_accepts_custom_price_checker_settings(self):
+        result = market_service.validate(
+            {
+                "version": 1,
+                "refreshIntervalMinutes": 15,
+                "priceChecker": {
+                    "enabled": True,
+                    "intervalMinutes": 10,
+                    "cycles": 12,
+                    "categories": {"ETF": True, "Stock": True, "Fund": False},
+                },
+                "instruments": [
+                    {
+                        "ticker": "0P00009VED.SI",
+                        "enabled": True,
+                        "name": "Franklin Income A(Mdis)SGD-H1",
+                        "region": "Singapore",
+                        "type": "Fund",
+                        "metadata_source": "Yahoo Finance fund page",
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(result["priceChecker"]["intervalMinutes"], 10)
+        self.assertEqual(result["priceChecker"]["cycles"], 12)
+        self.assertFalse(result["priceChecker"]["categories"]["Fund"])
+
+    def test_rejects_more_than_100_tickers(self):
+        with self.assertRaisesRegex(ValueError, "Expected at most 100 tickers"):
+            market_service.validate(
+                {
+                    "version": 1,
+                    "tickers": [{"ticker": f"AAPL{i}", "enabled": True} for i in range(101)],
+                }
+            )
 
 
 class QuoteChartTests(unittest.TestCase):

@@ -2,6 +2,16 @@
   "version": 1,
   "revision": 28,
   "refreshIntervalMinutes": 15,
+  "priceChecker": {
+    "enabled": true,
+    "intervalMinutes": 8,
+    "cycles": 30,
+    "categories": {
+      "ETF": true,
+      "Stock": true,
+      "Fund": true
+    }
+  },
   "saved_at": "2026-10-12T11:58:53.700Z",
   "instruments": [
     {

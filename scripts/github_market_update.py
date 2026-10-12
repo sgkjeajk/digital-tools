@@ -1,15 +1,22 @@
 """Actions entry point: price snapshot or one exact-symbol metadata lookup."""
 import os, json, datetime as dt
-from market_service import ROOT,atomic,lookup,now,refresh,symbol,validate,read_config
+from market_service import ROOT,atomic,lookup,now,refresh,symbol,validate,read_config,DEFAULT_PRICE_CHECKER
 from market_hours import market_open
 
 FRESH_PRICE_SECONDS = 10 * 60
 HEARTBEAT_MIN_SECONDS = 10 * 60
 
+def price_checker_categories(config):
+    return config.get('priceChecker',{}).get('categories',DEFAULT_PRICE_CHECKER['categories'])
+
+def price_checker_enabled(config):
+    return config.get('priceChecker',{}).get('enabled',DEFAULT_PRICE_CHECKER['enabled'])
+
 def prices_are_fresh(config, data, at=None, eligible=None):
     """Skip only when every enabled ticker has a recent successful price."""
     if data.get('config_revision') != config.get('revision',0): return False
-    active=[x['ticker'] for x in config['instruments'] if x['enabled'] and (eligible is None or x['ticker'] in eligible)]
+    categories=price_checker_categories(config)
+    active=[x['ticker'] for x in config['instruments'] if x['enabled'] and categories.get(x['type'],True) and (eligible is None or x['ticker'] in eligible)]
     if not active: return False
     rows={x['ticker']:x for x in data.get('instruments',[])}
     at=at or dt.datetime.now(dt.timezone.utc)
@@ -64,13 +71,21 @@ if __name__=='__main__':
         path=ROOT/'data/lookups'/f'{ticker}.json';path.parent.mkdir(parents=True,exist_ok=True);atomic(path,result)
         print('Completed metadata lookup for',ticker)
     else:
-        config=read_config()
-        validate(config)
+        config=validate(read_config())
         history=os.environ.get('REFRESH_ATH','false').lower()=='true'
         eligible=None
+        if not history and not price_checker_enabled(config):
+            write_check_heartbeat(config,'skipped_price_checker_disabled',request_id,history,force=True)
+            print('Skipped quote scraping: price checker is disabled in admin settings.')
+            raise SystemExit(0)
+        categories=price_checker_categories(config)
+        if not history and not any(categories.values()):
+            write_check_heartbeat(config,'skipped_no_price_checker_categories',request_id,history,force=True)
+            print('Skipped quote scraping: no price checker categories are enabled.')
+            raise SystemExit(0)
         if os.environ.get('TRIGGER_EVENT')=='schedule' and not history:
             at=dt.datetime.now(dt.timezone.utc)
-            eligible={x['ticker'] for x in config['instruments'] if x['enabled'] and market_open(x['ticker'],at)}
+            eligible={x['ticker'] for x in config['instruments'] if x['enabled'] and categories.get(x['type'],True) and market_open(x['ticker'],at)}
             if not eligible:
                 write_check_heartbeat(config,'skipped_market_closed',request_id,history)
                 print('Skipped scheduled quote scraping: neither SGX nor US regular market is open.')

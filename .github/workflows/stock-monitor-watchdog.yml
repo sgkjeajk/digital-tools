@@ -1,7 +1,7 @@
 name: Stock Monitor Watchdog
 on:
   schedule:
-    # Smaller backup launcher. It requests a 5-cycle checker only when fewer
+    # Smaller backup launcher. It requests a checker using saved admin settings only when fewer
     # than 3 stock-monitor checker runs are already queued or running.
     - cron: '43 */3 * * *'
   workflow_dispatch:
@@ -63,11 +63,11 @@ jobs:
               print(f"- {run['id']} {run['status']} {run.get('event')} {run.get('created_at')} {run.get('html_url')}")
 
           if count >= limit:
-              print("Queue limit reached; no new 5x price checker dispatched.")
+              print("Queue limit reached; no new price checker dispatched.")
               raise SystemExit(0)
 
           request_id = "watchdog-" + dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
           dispatch_url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
-          request("POST", dispatch_url, {"ref": "main", "inputs": {"lookupTicker": "", "requestId": request_id, "checkerCycles": "5"}})
-          print(f"Dispatched one new 5x price checker: {request_id}")
+          request("POST", dispatch_url, {"ref": "main", "inputs": {"lookupTicker": "", "requestId": request_id}})
+          print(f"Dispatched one new price checker using saved admin settings: {request_id}")
           PY

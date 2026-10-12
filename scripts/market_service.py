@@ -6,7 +6,17 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK = threading.RLock()
 UA = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json,text/html'}
 CATALOG = {}
-MAX_TICKERS = 50
+MAX_TICKERS = 100
+DEFAULT_PRICE_CHECKER = {
+    'enabled': True,
+    'intervalMinutes': 8,
+    'cycles': 30,
+    'categories': {'ETF': True, 'Stock': True, 'Fund': True},
+}
+PRICE_CHECKER_INTERVALS = (5, 6, 8, 9, 10)
+PRICE_CHECKER_CYCLE_MIN = 1
+PRICE_CHECKER_CYCLE_MAX = 30
+PRICE_CHECKER_TYPES = ('ETF', 'Stock', 'Fund')
 for directory_file in (ROOT/'data/symbol-directory').glob('*.json'):
     CATALOG.update(json.loads(directory_file.read_text(encoding='utf-8')))
 
@@ -66,6 +76,24 @@ def validate(data):
     if not isinstance(entries,list) or len(entries)>MAX_TICKERS: raise ValueError('Expected at most '+str(MAX_TICKERS)+' tickers.')
     interval=data.get('refreshIntervalMinutes',15)
     if type(interval)!=int or interval not in (5,10,15,30,60): raise ValueError('Invalid refresh interval.')
+    raw_checker=data.get('priceChecker',{})
+    if raw_checker is None: raw_checker={}
+    if not isinstance(raw_checker,dict): raise ValueError('Invalid price checker settings.')
+    checker={
+        'enabled': raw_checker.get('enabled',DEFAULT_PRICE_CHECKER['enabled']),
+        'intervalMinutes': raw_checker.get('intervalMinutes',DEFAULT_PRICE_CHECKER['intervalMinutes']),
+        'cycles': raw_checker.get('cycles',DEFAULT_PRICE_CHECKER['cycles']),
+        'categories': {**DEFAULT_PRICE_CHECKER['categories'], **raw_checker.get('categories',{})}
+    }
+    if type(checker['enabled'])!=bool: raise ValueError('Price checker enabled setting must be true or false.')
+    if type(checker['intervalMinutes'])!=int or checker['intervalMinutes'] not in PRICE_CHECKER_INTERVALS:
+        raise ValueError('Price checker interval must be 5, 6, 8, 9 or 10 minutes.')
+    if type(checker['cycles'])!=int or not PRICE_CHECKER_CYCLE_MIN <= checker['cycles'] <= PRICE_CHECKER_CYCLE_MAX:
+        raise ValueError('Price checker cycles must be between 1 and 30.')
+    if not isinstance(checker['categories'],dict): raise ValueError('Invalid price checker category settings.')
+    checker['categories']={k: checker['categories'].get(k, True) for k in PRICE_CHECKER_TYPES}
+    if any(type(v)!=bool for v in checker['categories'].values()):
+        raise ValueError('Price checker category settings must be true or false.')
     seen=set(); result=[]
     for x in entries:
         if not isinstance(x,dict) or type(x.get('enabled'))!=bool: raise ValueError('Enabled must be true or false.')
@@ -78,7 +106,7 @@ def validate(data):
             meta=lookup(t)
         result.append({**meta,'enabled':x['enabled']})
     result.sort(key=lambda x:({'ETF':0,'Stock':1,'Fund':2}.get(x['type'],3),x['ticker']))
-    return {'version':1,'refreshIntervalMinutes':interval,'instruments':result}
+    return {'version':1,'refreshIntervalMinutes':interval,'priceChecker':checker,'instruments':result}
 
 def save_config(data):
     validated=validate(data)
@@ -358,12 +386,13 @@ def retrieve(x,old,history=False):
     return result
 
 def refresh(history=False, eligible_tickers=None):
-    with LOCK: cfg=read_config()
+    with LOCK: cfg=validate(read_config())
     path=ROOT/'market-data.json'
     old=json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
     prior={x['ticker']:x for x in old.get('instruments',[])}
     active=[x for x in cfg['instruments'] if x['enabled']]
-    selected=[x for x in active if eligible_tickers is None or x['ticker'] in eligible_tickers]
+    categories=cfg.get('priceChecker',{}).get('categories',DEFAULT_PRICE_CHECKER['categories'])
+    selected=[x for x in active if categories.get(x['type'],True) and (eligible_tickers is None or x['ticker'] in eligible_tickers)]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         updated={x['ticker']:row for x,row in zip(selected,pool.map(lambda x:retrieve(x,prior.get(x['ticker'],{}),history),selected))}
     # Preserve closed-market prices and their original retrieval timestamps.

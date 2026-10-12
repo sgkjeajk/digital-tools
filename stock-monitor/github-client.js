@@ -2,7 +2,9 @@
 // Credentials remain inside this closure and are never written to browser storage.
 window.ECGitHub=(()=>{
  const repo='sgkjeajk/digital-tools',branch='main',base='https://api.github.com/repos/'+repo;
- const MAX_TICKERS=50;
+ const MAX_TICKERS=100;
+ const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,categories:{ETF:true,Stock:true,Fund:true}};
+ const CHECKER_INTERVALS=[5,6,8,9,10];
  let credential='';const catalogs=new Map();
  const headers=(extra={})=>({...extra,'X-GitHub-Api-Version':'2022-11-28',...(credential?{Authorization:'Bearer '+credential}:{})});
  async function request(path,options={}){
@@ -27,8 +29,19 @@ window.ECGitHub=(()=>{
   if(items.length>MAX_TICKERS)throw Error('Maximum '+MAX_TICKERS+' tickers.');const seen=new Set();
   const instruments=items.map(x=>{const ticker=normalise(x.ticker);if(seen.has(ticker))throw Error('Duplicate ticker: '+ticker);seen.add(ticker);if(typeof x.enabled!=='boolean'||!['ETF','Stock','Fund'].includes(x.type)||!x.name||!x.market)throw Error('Verify every ticker before saving.');return {ticker,enabled:x.enabled,name:x.name,region:x.market,type:x.type,metadata_source:x.source||x.metadata_source};}).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
   const interval=input.refreshIntervalMinutes;if(![5,10,15,30,60].includes(interval))throw Error('Invalid refresh interval.');
+  const rawChecker=input.priceChecker||{},rawCategories=rawChecker.categories||{};
+  const priceChecker={
+   enabled:typeof rawChecker.enabled==='boolean'?rawChecker.enabled:DEFAULT_PRICE_CHECKER.enabled,
+   intervalMinutes:CHECKER_INTERVALS.includes(Number(rawChecker.intervalMinutes))?Number(rawChecker.intervalMinutes):DEFAULT_PRICE_CHECKER.intervalMinutes,
+   cycles:Number.isInteger(Number(rawChecker.cycles))?Math.max(1,Math.min(30,Number(rawChecker.cycles))):DEFAULT_PRICE_CHECKER.cycles,
+   categories:{
+    ETF:typeof rawCategories.ETF==='boolean'?rawCategories.ETF:DEFAULT_PRICE_CHECKER.categories.ETF,
+    Stock:typeof rawCategories.Stock==='boolean'?rawCategories.Stock:DEFAULT_PRICE_CHECKER.categories.Stock,
+    Fund:typeof rawCategories.Fund==='boolean'?rawCategories.Fund:DEFAULT_PRICE_CHECKER.categories.Fund
+   }
+  };
   const latest=await file('data/stock-tickers.json');if((latest.data.revision||0)!==input.revision)throw Error('Another save changed the configuration. Reload before saving your draft.');
-  const cfg={version:1,revision:input.revision+1,refreshIntervalMinutes:interval,saved_at:new Date().toISOString(),instruments};
+  const cfg={version:1,revision:input.revision+1,refreshIntervalMinutes:interval,priceChecker,saved_at:new Date().toISOString(),instruments};
   const result=await request('/contents/data/stock-tickers.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Update Stock ETF Monitor ticker configuration',branch,sha:latest.sha,content:encode(JSON.stringify(cfg,null,2)+'\n')})});
   return {...cfg,commit_sha:result.commit?.sha};
  }
@@ -37,16 +50,17 @@ window.ECGitHub=(()=>{
   for(let i=0;i<45;i++){await delay(4000);const data=await raw('market-data.json');if(data.request_id===requestId)return data;}
   throw Error('Price retrieval is still queued or running. Saved prices retain their timestamps. Check the updater workflow and refresh this page later.');
  }
- async function startChecker30(progress=()=>{}){
+ async function startChecker(progress=()=>{}){
   const data=await raw('data/stock-monitor.json').catch(()=>raw('market-data.json'));
   const timestamp=data.last_check_completed_at||data.generated_at;
   if(timestamp){
    const ageMinutes=(Date.now()-Date.parse(timestamp))/60000;
    if(Number.isFinite(ageMinutes)&&ageMinutes<15){
-    throw Error('Checker is already fresh: last completed check was '+ageMinutes.toFixed(1)+' minutes ago. No 10x recovery launch needed.');
+    throw Error('Checker is already fresh: last completed check was '+ageMinutes.toFixed(1)+' minutes ago. No recovery launch needed.');
    }
   }
-  const requestId=id();await dispatch({requestId,checkerCycles:'10'});progress('10x price checker queued in GitHub Actions. It will run up to 10 cycles, about every 8 minutes, after GitHub starts it.');
+  const cfg=await raw('data/stock-tickers.json'),settings={...DEFAULT_PRICE_CHECKER,...(cfg.priceChecker||{})};
+  const requestId=id();await dispatch({requestId});progress('Price checker queued in GitHub Actions. It will use the saved admin settings: '+(settings.enabled?'enabled':'disabled')+', '+settings.cycles+' cycles, about every '+settings.intervalMinutes+' minutes, after GitHub starts it.');
   return {requestId,workflowUrl:'https://github.com/'+repo+'/actions/workflows/stock-monitor.yml'};
  }
  function mount(container){
@@ -55,5 +69,5 @@ window.ECGitHub=(()=>{
   button.onclick=async()=>{const value=input.value.trim();input.value='';if(!value){status.textContent='Enter your restricted GitHub token.';return;}credential=value;button.disabled=true;try{await request('');status.textContent='Connected for this tab. Save writes the shared GitHub ticker configuration.';}catch(e){credential='';status.textContent=e.message;}finally{button.disabled=false;}};
   container.querySelector('.disconnect').onclick=()=>{credential='';input.value='';status.textContent='Disconnected. The token has been cleared from this tab.';};
  }
- return {file,raw,lookup,save,refreshPrices,startChecker30,mount,connected:()=>Boolean(credential)};
+ return {file,raw,lookup,save,refreshPrices,startChecker,mount,connected:()=>Boolean(credential)};
 })();

@@ -60,12 +60,30 @@ jobs:
           CHECKER_CYCLES: ${{ inputs.checkerCycles }}
           REFRESH_ATH: ${{ github.event_name != 'schedule' || github.event.schedule == '23 0,6,12 * * *' }}
         run: |
+          config_settings="$(python - <<'PY'
+          import sys
+          sys.path.insert(0, 'scripts')
+          from market_service import read_config, validate
+          cfg = validate(read_config())
+          checker = cfg.get('priceChecker', {})
+          categories = checker.get('categories', {})
+          enabled = checker.get('enabled', True) and any(categories.get(k, True) for k in ('ETF', 'Stock', 'Fund'))
+          print(int(checker.get('cycles', 30)), int(checker.get('intervalMinutes', 8)) * 60, 'true' if enabled else 'false')
+          PY
+          )"
+          set -- $config_settings
+          config_run_count="${1:-30}"
+          sleep_seconds="${2:-480}"
+          checker_enabled="${3:-true}"
           run_count=1
           if [ -z "$LOOKUP_TICKER" ]; then
-            run_count="${CHECKER_CYCLES:-10}"
+            run_count="${CHECKER_CYCLES:-$config_run_count}"
             case "$run_count" in
-              ''|*[!0-9]*) run_count=10 ;;
+              ''|*[!0-9]*) run_count="$config_run_count" ;;
             esac
+            if [ "$checker_enabled" != "true" ] && [ "${REFRESH_ATH:-false}" != "true" ]; then
+              run_count=1
+            fi
           fi
           if [ "$run_count" != "1" ]; then
           export TOPUP_CHECKER_CYCLES="$run_count"
@@ -152,6 +170,6 @@ jobs:
               git push origin HEAD:main
             fi
             if [ "$attempt" -lt "$run_count" ]; then
-              sleep 480
+              sleep "$sleep_seconds"
             fi
           done
