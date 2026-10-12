@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 24,
+  "revision": 25,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-12T07:32:29.433Z",
+  "saved_at": "2026-10-12T11:54:52.990Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -203,6 +203,14 @@
       "region": "Singapore",
       "type": "Fund",
       "metadata_source": "Yahoo Finance fund page · 11 Oct 2026"
+    },
+    {
+      "ticker": "0P0000Y077.SI",
+      "enabled": true,
+      "name": "PIMCO GIS Income E SGD Hedged Inc",
+      "region": "SES",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance quote webpage"
     },
     {
       "ticker": "0P0000Z32L.SI",
