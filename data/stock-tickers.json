@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 23,
+  "revision": 24,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-12T06:58:34.029Z",
+  "saved_at": "2026-10-12T07:32:29.433Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -179,6 +179,14 @@
       "region": "SES",
       "type": "Fund",
       "metadata_source": "Yahoo Finance quote webpage"
+    },
+    {
+      "ticker": "0P00006OE7.SI",
+      "enabled": true,
+      "name": "PineBridge Acorns of Asia Balanced",
+      "region": "Singapore",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance fund page"
     },
     {
       "ticker": "0P00009VED.SI",
