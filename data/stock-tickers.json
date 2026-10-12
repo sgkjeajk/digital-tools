@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 25,
+  "revision": 26,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-12T11:54:52.990Z",
+  "saved_at": "2026-10-12T11:57:19.113Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -216,6 +216,14 @@
       "ticker": "0P0000Z32L.SI",
       "enabled": true,
       "name": "Allianz Income and Growth AMi3 H2 SGD",
+      "region": "SES",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance quote webpage"
+    },
+    {
+      "ticker": "0P0001I7S9.SI",
+      "enabled": true,
+      "name": "Maybank Asian Growth and Inc A SGD Inc",
       "region": "SES",
       "type": "Fund",
       "metadata_source": "Yahoo Finance quote webpage"
