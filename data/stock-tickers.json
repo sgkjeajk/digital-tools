@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 22,
+  "revision": 23,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-11T14:45:05.391Z",
+  "saved_at": "2026-10-12T06:58:34.029Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -170,6 +170,14 @@
       "name": "Singapore Telecommunications Limited",
       "region": "SES",
       "type": "Stock",
+      "metadata_source": "Yahoo Finance quote webpage"
+    },
+    {
+      "ticker": "0P00006G0E.SI",
+      "enabled": true,
+      "name": "Schroder Multi-Asset Revolution A",
+      "region": "SES",
+      "type": "Fund",
       "metadata_source": "Yahoo Finance quote webpage"
     },
     {
