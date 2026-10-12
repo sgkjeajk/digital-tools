@@ -1,0 +1,11 @@
+{
+  "request_id": "52e9ef74-3c16-4c8a-b88d-d643dae5444f",
+  "generated_at": "2026-10-12T11:57:09.120241Z",
+  "instrument": {
+    "ticker": "0P0001I7S9.SI",
+    "name": "Maybank Asian Growth and Inc A SGD Inc",
+    "region": "SES",
+    "type": "Fund",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
