@@ -392,7 +392,7 @@ def refresh(history=False, eligible_tickers=None):
     prior={x['ticker']:x for x in old.get('instruments',[])}
     active=[x for x in cfg['instruments'] if x['enabled']]
     categories=cfg.get('priceChecker',{}).get('categories',DEFAULT_PRICE_CHECKER['categories'])
-    selected=[x for x in active if categories.get(x['type'],True) and (eligible_tickers is None or x['ticker'] in eligible_tickers)]
+    selected=[x for x in active if (history or categories.get(x['type'],True)) and (eligible_tickers is None or x['ticker'] in eligible_tickers)]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         updated={x['ticker']:row for x,row in zip(selected,pool.map(lambda x:retrieve(x,prior.get(x['ticker'],{}),history),selected))}
     # Preserve closed-market prices and their original retrieval timestamps.
