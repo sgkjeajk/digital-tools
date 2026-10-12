@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "revision": 27,
+  "revision": 28,
   "refreshIntervalMinutes": 15,
-  "saved_at": "2026-10-12T11:58:49.834Z",
+  "saved_at": "2026-10-12T11:58:53.700Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
