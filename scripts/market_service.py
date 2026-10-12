@@ -44,7 +44,7 @@ def page(ticker):
             return fetch('https://'+host+'/quote/'+urllib.parse.quote(ticker)+'/').replace('\\"','"')
         except Exception as error:
             last=error
-    raise last
+    raise ValueError('Yahoo Finance page unavailable for '+ticker+': '+str(last))
 
 def lookup(ticker):
     ticker=symbol(ticker)
