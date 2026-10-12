@@ -110,7 +110,7 @@ def validate(data):
             meta=lookup(t)
         result.append({**meta,'enabled':x['enabled']})
     result.sort(key=lambda x:({'ETF':0,'Stock':1,'Fund':2}.get(x['type'],3),x['ticker']))
-    return {'version':1,'refreshIntervalMinutes':interval,'priceChecker':checker,'instruments':result}
+    return {'version':1,'revision':data.get('revision',0),'refreshIntervalMinutes':interval,'priceChecker':checker,'instruments':result}
 
 def save_config(data):
     validated=validate(data)
