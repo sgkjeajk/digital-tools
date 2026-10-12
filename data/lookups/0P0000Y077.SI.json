@@ -1,0 +1,11 @@
+{
+  "request_id": "0750a6f9-969d-4b77-92f9-f4472c832106",
+  "generated_at": "2026-10-12T11:54:32.795822Z",
+  "instrument": {
+    "ticker": "0P0000Y077.SI",
+    "name": "PIMCO GIS Income E SGD Hedged Inc",
+    "region": "SES",
+    "type": "Fund",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
