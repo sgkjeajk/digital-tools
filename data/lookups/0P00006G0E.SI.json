@@ -1,0 +1,11 @@
+{
+  "request_id": "88c89daf-754a-4453-84e1-896bc99ca3a8",
+  "generated_at": "2026-10-12T06:52:23.285894Z",
+  "instrument": {
+    "ticker": "0P00006G0E.SI",
+    "name": "Schroder Multi-Asset Revolution A",
+    "region": "SES",
+    "type": "Fund",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
