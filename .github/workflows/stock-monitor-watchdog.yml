@@ -15,12 +15,15 @@ jobs:
   launch:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Dispatch price checker when active queue is below limit
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           WORKFLOW_FILE: stock-monitor.yml
-          MAX_ACTIVE_CHECKERS: '3'
+          MAX_ACTIVE_CHECKERS_DEFAULT: '3'
         run: |
           python - <<'PY'
           import datetime as dt
@@ -32,7 +35,14 @@ jobs:
           token = os.environ["GH_TOKEN"]
           repo = os.environ["REPO"]
           workflow = os.environ["WORKFLOW_FILE"]
-          limit = int(os.environ.get("MAX_ACTIVE_CHECKERS", "3"))
+          try:
+              with open("data/stock-tickers.json", encoding="utf-8") as f:
+                  cfg = json.load(f)
+              limit = int(cfg.get("priceChecker", {}).get("maxActiveCheckers", os.environ.get("MAX_ACTIVE_CHECKERS_DEFAULT", "3")))
+          except Exception as error:
+              print(f"Could not read max active checker setting; using default. {error}")
+              limit = int(os.environ.get("MAX_ACTIVE_CHECKERS_DEFAULT", "3"))
+          limit = max(1, min(10, limit))
           headers = {
               "Accept": "application/vnd.github+json",
               "Authorization": f"Bearer {token}",

@@ -68,13 +68,14 @@ jobs:
           checker = cfg.get('priceChecker', {})
           categories = checker.get('categories', {})
           enabled = checker.get('enabled', True) and any(categories.get(k, True) for k in ('ETF', 'Stock', 'Fund'))
-          print(int(checker.get('cycles', 30)), int(checker.get('intervalMinutes', 8)) * 60, 'true' if enabled else 'false')
+          print(int(checker.get('cycles', 30)), int(checker.get('intervalMinutes', 8)) * 60, 'true' if enabled else 'false', int(checker.get('maxActiveCheckers', 3)))
           PY
           )"
           set -- $config_settings
           config_run_count="${1:-30}"
           sleep_seconds="${2:-480}"
           checker_enabled="${3:-true}"
+          max_active_checkers="${4:-3}"
           run_count=1
           if [ -z "$LOOKUP_TICKER" ]; then
             run_count="${CHECKER_CYCLES:-$config_run_count}"
@@ -87,6 +88,7 @@ jobs:
           fi
           if [ "$run_count" != "1" ]; then
           export TOPUP_CHECKER_CYCLES="$run_count"
+          export MAX_ACTIVE_CHECKERS="$max_active_checkers"
           python - <<'PY'
           import datetime as dt
           import json
@@ -99,7 +101,7 @@ jobs:
           workflow = os.environ["WORKFLOW_FILE"]
           this_run = int(os.environ["RUN_ID"])
           topup_cycles = os.environ.get("TOPUP_CHECKER_CYCLES", "10")
-          launch_threshold = 3
+          launch_threshold = int(os.environ.get("MAX_ACTIVE_CHECKERS", "3"))
           headers = {
               "Accept": "application/vnd.github+json",
               "Authorization": f"Bearer {token}",

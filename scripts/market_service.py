@@ -12,6 +12,7 @@ DEFAULT_PRICE_CHECKER = {
     'intervalMinutes': 8,
     'cycles': 30,
     'categories': {'ETF': True, 'Stock': True, 'Fund': True},
+    'maxActiveCheckers': 3,
 }
 PRICE_CHECKER_INTERVALS = (5, 6, 8, 9, 10)
 PRICE_CHECKER_CYCLE_MIN = 1
@@ -83,13 +84,16 @@ def validate(data):
         'enabled': raw_checker.get('enabled',DEFAULT_PRICE_CHECKER['enabled']),
         'intervalMinutes': raw_checker.get('intervalMinutes',DEFAULT_PRICE_CHECKER['intervalMinutes']),
         'cycles': raw_checker.get('cycles',DEFAULT_PRICE_CHECKER['cycles']),
-        'categories': {**DEFAULT_PRICE_CHECKER['categories'], **raw_checker.get('categories',{})}
+        'categories': {**DEFAULT_PRICE_CHECKER['categories'], **raw_checker.get('categories',{})},
+        'maxActiveCheckers': raw_checker.get('maxActiveCheckers',DEFAULT_PRICE_CHECKER['maxActiveCheckers'])
     }
     if type(checker['enabled'])!=bool: raise ValueError('Price checker enabled setting must be true or false.')
     if type(checker['intervalMinutes'])!=int or checker['intervalMinutes'] not in PRICE_CHECKER_INTERVALS:
         raise ValueError('Price checker interval must be 5, 6, 8, 9 or 10 minutes.')
     if type(checker['cycles'])!=int or not PRICE_CHECKER_CYCLE_MIN <= checker['cycles'] <= PRICE_CHECKER_CYCLE_MAX:
         raise ValueError('Price checker cycles must be between 1 and 30.')
+    if type(checker['maxActiveCheckers'])!=int or not 1 <= checker['maxActiveCheckers'] <= 10:
+        raise ValueError('Max active checker jobs must be between 1 and 10.')
     if not isinstance(checker['categories'],dict): raise ValueError('Invalid price checker category settings.')
     checker['categories']={k: checker['categories'].get(k, True) for k in PRICE_CHECKER_TYPES}
     if any(type(v)!=bool for v in checker['categories'].values()):

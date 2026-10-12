@@ -3,7 +3,7 @@
 const CATALOG={};
 const KEY='market-watch-admin.local.v1';
 const MAX_TICKERS=100;
-const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,categories:{ETF:true,Stock:true,Fund:true}};
+const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,maxActiveCheckers:3,categories:{ETF:true,Stock:true,Fund:true}};
 const CHECKER_INTERVALS=[5,6,8,9,10];
 const CHECKER_TYPES=['ETF','Stock','Fund'];
 const $=id=>document.getElementById(id);
@@ -34,7 +34,7 @@ const normalize=s=>{if(typeof s!=='string')throw Error('Ticker must be text.');c
 const sort=list=>list.sort((a,b)=>({ETF:0,Stock:1}[a.type]??2)-({ETF:0,Stock:1}[b.type]??2)||a.ticker.localeCompare(b.ticker,'en'));
 function tell(text,kind=''){ $('message').textContent=text;$('message').className=kind; }
 function tellNode(node,kind=''){ $('message').replaceChildren(node);$('message').className=kind; }
-function lock(value){busy=value;for(const id of ['addButton','ticker','addEnabled','importButton','exportButton','viewExcelButton','exportExcelButton','importFile','saveEdit','editTicker','editEnabled','cancelEdit','saveMain','cancelMain','refreshInterval','checkerEnabled','checkerInterval','checkerCycles','checkerETF','checkerStock','checkerFund'])if($(id))$(id).disabled=value;render();}
+function lock(value){busy=value;for(const id of ['addButton','ticker','addEnabled','importButton','exportButton','viewExcelButton','exportExcelButton','importFile','saveEdit','editTicker','editEnabled','cancelEdit','saveMain','cancelMain','refreshInterval','checkerEnabled','checkerInterval','checkerCycles','checkerMaxActive','checkerETF','checkerStock','checkerFund'])if($(id))$(id).disabled=value;render();}
 async function api(path){if(path==='/api/config')return (await ECGitHub.file('data/stock-tickers.json')).data;if(path.startsWith('/api/lookup'))return ECGitHub.lookup(new URLSearchParams(path.split('?')[1]).get('ticker'));throw Error('Unknown operation.');}
 async function persist(){return ECGitHub.save({...backup(),revision},items);}
 function commit(next){items=sort(next);render();}
@@ -44,6 +44,7 @@ function normaliseCheckerSettings(raw={}){
   enabled:typeof raw.enabled==='boolean'?raw.enabled:DEFAULT_PRICE_CHECKER.enabled,
   intervalMinutes:CHECKER_INTERVALS.includes(Number(raw.intervalMinutes))?Number(raw.intervalMinutes):DEFAULT_PRICE_CHECKER.intervalMinutes,
   cycles:Number.isInteger(Number(raw.cycles))?Math.max(1,Math.min(30,Number(raw.cycles))):DEFAULT_PRICE_CHECKER.cycles,
+  maxActiveCheckers:Number.isInteger(Number(raw.maxActiveCheckers))?Math.max(1,Math.min(10,Number(raw.maxActiveCheckers))):DEFAULT_PRICE_CHECKER.maxActiveCheckers,
   categories:{ETF:Boolean(categories.ETF),Stock:Boolean(categories.Stock),Fund:Boolean(categories.Fund)}
  };
 }
@@ -52,17 +53,18 @@ function readCheckerSettings(){
   enabled:$('checkerEnabled').checked,
   intervalMinutes:Number($('checkerInterval').value),
   cycles:Number($('checkerCycles').value),
+  maxActiveCheckers:Number($('checkerMaxActive').value),
   categories:{ETF:$('checkerETF').checked,Stock:$('checkerStock').checked,Fund:$('checkerFund').checked}
  });
 }
 function writeCheckerSettings(settings){
  const s=normaliseCheckerSettings(settings);
- $('checkerEnabled').checked=s.enabled;$('checkerInterval').value=String(s.intervalMinutes);$('checkerCycles').value=String(s.cycles);
+ $('checkerEnabled').checked=s.enabled;$('checkerInterval').value=String(s.intervalMinutes);$('checkerCycles').value=String(s.cycles);$('checkerMaxActive').value=String(s.maxActiveCheckers);
  $('checkerETF').checked=s.categories.ETF;$('checkerStock').checked=s.categories.Stock;$('checkerFund').checked=s.categories.Fund;
 }
 function updateDirty(){const dirty=JSON.stringify(items)!==JSON.stringify(savedItems)||Number($('refreshInterval').value)!==savedRefresh||JSON.stringify(readCheckerSettings())!==JSON.stringify(savedChecker);$('dirtyNote').textContent=dirty?'Unsaved changes':'All changes saved';return dirty;}
 $('refreshInterval').onchange=updateDirty;
-for(const id of ['checkerEnabled','checkerInterval','checkerCycles','checkerETF','checkerStock','checkerFund'])$(id).onchange=updateDirty;
+for(const id of ['checkerEnabled','checkerInterval','checkerCycles','checkerMaxActive','checkerETF','checkerStock','checkerFund'])$(id).onchange=updateDirty;
 $('saveMain').onclick=async()=>{if(busy)return;lock(true);try{const cfg=await persist();revision=cfg.revision;savedItems=structuredClone(items);savedRefresh=cfg.refreshIntervalMinutes;savedChecker=normaliseCheckerSettings(cfg.priceChecker);writeCheckerSettings(savedChecker);updateDirty();tell('Saved to shared GitHub configuration. The Monitor recognises changes on its next refresh; new prices follow the queued updater.');}catch(e){tell(e.message,'error');}finally{lock(false);}};
 $('cancelMain').onclick=async()=>{if(!updateDirty())return;if(await confirmAction('Discard unsaved changes?','Restore the ticker list and checker settings from your last saved configuration?','Discard Changes')){items=structuredClone(savedItems);$('refreshInterval').value=savedRefresh;writeCheckerSettings(savedChecker);render();tell('Unsaved changes discarded.');}};
 window.addEventListener('beforeunload',e=>{if(updateDirty()){e.preventDefault();e.returnValue='';}});

@@ -3,7 +3,7 @@
 window.ECGitHub=(()=>{
  const repo='sgkjeajk/digital-tools',branch='main',base='https://api.github.com/repos/'+repo;
  const MAX_TICKERS=100;
- const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,categories:{ETF:true,Stock:true,Fund:true}};
+ const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,maxActiveCheckers:3,categories:{ETF:true,Stock:true,Fund:true}};
  const CHECKER_INTERVALS=[5,6,8,9,10];
  let credential='';const catalogs=new Map();
  const headers=(extra={})=>({...extra,'X-GitHub-Api-Version':'2022-11-28',...(credential?{Authorization:'Bearer '+credential}:{})});
@@ -34,6 +34,7 @@ window.ECGitHub=(()=>{
    enabled:typeof rawChecker.enabled==='boolean'?rawChecker.enabled:DEFAULT_PRICE_CHECKER.enabled,
    intervalMinutes:CHECKER_INTERVALS.includes(Number(rawChecker.intervalMinutes))?Number(rawChecker.intervalMinutes):DEFAULT_PRICE_CHECKER.intervalMinutes,
    cycles:Number.isInteger(Number(rawChecker.cycles))?Math.max(1,Math.min(30,Number(rawChecker.cycles))):DEFAULT_PRICE_CHECKER.cycles,
+   maxActiveCheckers:Number.isInteger(Number(rawChecker.maxActiveCheckers))?Math.max(1,Math.min(10,Number(rawChecker.maxActiveCheckers))):DEFAULT_PRICE_CHECKER.maxActiveCheckers,
    categories:{
     ETF:typeof rawCategories.ETF==='boolean'?rawCategories.ETF:DEFAULT_PRICE_CHECKER.categories.ETF,
     Stock:typeof rawCategories.Stock==='boolean'?rawCategories.Stock:DEFAULT_PRICE_CHECKER.categories.Stock,

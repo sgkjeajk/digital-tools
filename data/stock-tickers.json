@@ -10,7 +10,8 @@
       "ETF": true,
       "Stock": true,
       "Fund": true
-    }
+    },
+    "maxActiveCheckers": 3
   },
   "saved_at": "2026-10-12T22:58:14.552Z",
   "instruments": [
