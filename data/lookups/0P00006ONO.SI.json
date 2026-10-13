@@ -1,0 +1,11 @@
+{
+  "request_id": "fbde9284-c9c6-4241-bb68-dea4cf8a3665",
+  "generated_at": "2026-10-13T10:08:56.507031Z",
+  "instrument": {
+    "ticker": "0P00006ONO.SI",
+    "name": "FSSA Dividend Advantage A Qdis",
+    "region": "SES",
+    "type": "Fund",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
