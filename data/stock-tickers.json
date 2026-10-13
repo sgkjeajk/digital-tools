@@ -1,19 +1,19 @@
 {
   "version": 1,
-  "revision": 29,
+  "revision": 30,
   "refreshIntervalMinutes": 15,
   "priceChecker": {
     "enabled": true,
     "intervalMinutes": 8,
     "cycles": 10,
+    "maxActiveCheckers": 3,
     "categories": {
       "ETF": true,
       "Stock": true,
       "Fund": true
-    },
-    "maxActiveCheckers": 3
+    }
   },
-  "saved_at": "2026-10-12T22:58:14.552Z",
+  "saved_at": "2026-10-13T10:09:09.873Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -198,6 +198,14 @@
       "region": "Singapore",
       "type": "Fund",
       "metadata_source": "Yahoo Finance fund page"
+    },
+    {
+      "ticker": "0P00006ONO.SI",
+      "enabled": true,
+      "name": "FSSA Dividend Advantage A Qdis",
+      "region": "SES",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance quote webpage"
     },
     {
       "ticker": "0P00009VED.SI",
