@@ -46,6 +46,7 @@ window.ECGitHub=(()=>{
   const result=await request('/contents/data/stock-tickers.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Update Stock ETF Monitor ticker configuration',branch,sha:latest.sha,content:encode(JSON.stringify(cfg,null,2)+'\n')})});
   return {...cfg,commit_sha:result.commit?.sha};
  }
+ async function getCheckerSnapshot(path){return raw(path);}
  async function refreshPrices(progress=()=>{}){
   const requestId=id();await dispatch({requestId,refreshDividends:'true'});progress('Price, ATH and dividend retrieval queued in GitHub Actions. Waiting for its result…');
   for(let i=0;i<45;i++){await delay(4000);const data=await raw('market-data.json');if(data.request_id===requestId){progress('Prices updated. Waiting for dividend data to finish…');for(let j=0;j<45;j++){await delay(4000);const dividend=await raw('dividend-data.json').catch(()=>null);if(dividend&&dividend.generated_at&&Date.parse(dividend.generated_at)>=Date.parse(data.generated_at))return data;}throw Error('Prices updated but dividend refresh has not completed. Please check the workflow before relying on dividend values.');}}
@@ -70,5 +71,5 @@ window.ECGitHub=(()=>{
   button.onclick=async()=>{const value=input.value.trim();input.value='';if(!value){status.textContent='Enter your restricted GitHub token.';return;}credential=value;button.disabled=true;try{await request('');status.textContent='Connected for this tab. Save writes the shared GitHub ticker configuration.';}catch(e){credential='';status.textContent=e.message;}finally{button.disabled=false;}};
   container.querySelector('.disconnect').onclick=()=>{credential='';input.value='';status.textContent='Disconnected. The token has been cleared from this tab.';};
  }
- return {file,raw,lookup,save,refreshPrices,startChecker,mount,connected:()=>Boolean(credential)};
+ return {file,raw,lookup,save,refreshPrices,getCheckerSnapshot,startChecker,mount,connected:()=>Boolean(credential)};
 })();
