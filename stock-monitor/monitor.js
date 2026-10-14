@@ -39,9 +39,12 @@ function sortTable(type){
  if(state.key){
   const rows=[...tbody.querySelectorAll('tr[data-ticker]')];
   rows.sort((a,b)=>{
-   const aValue=state.key==='ticker'?a.dataset.ticker:a.dataset.region||'';
-   const bValue=state.key==='ticker'?b.dataset.ticker:b.dataset.region||'';
-   const primary=aValue.localeCompare(bValue,'en',{numeric:true,sensitivity:'base'});
+   const numeric=state.key!=='ticker'&&state.key!=='region';
+   const aValue=state.key==='ticker'?a.dataset.ticker:state.key==='region'?a.dataset.region||'':Number(a.dataset[state.key]);
+   const bValue=state.key==='ticker'?b.dataset.ticker:state.key==='region'?b.dataset.region||'':Number(b.dataset[state.key]);
+   const aMissing=numeric&&!Number.isFinite(aValue),bMissing=numeric&&!Number.isFinite(bValue);
+   if(aMissing||bMissing)return aMissing===bMissing?0:(aMissing?1:-1);
+   const primary=numeric?aValue-bValue:aValue.localeCompare(bValue,'en',{numeric:true,sensitivity:'base'});
    return (state.dir==='asc'?primary:-primary)||a.dataset.ticker.localeCompare(b.dataset.ticker,'en');
   });
   tbody.append(...rows);
@@ -52,7 +55,7 @@ function sortTable(type){
   th.setAttribute('aria-sort',selected?(state.dir==='asc'?'ascending':'descending'):'none');
   const button=th.querySelector('button');
   button.querySelector('.sort-arrow').textContent=selected?(state.dir==='asc'?'▲':'▼'):'↕';
-  button.setAttribute('aria-label','Sort '+(th.dataset.sortKey==='ticker'?'ticker':'region or market')+(selected?' '+(state.dir==='asc'?'ascending':'descending'):''));
+  button.setAttribute('aria-label','Sort '+({ticker:'ticker',region:'region or market',currentPct:'current percent change',drawdown:'drawdown percent',dividendYield:'dividend yield percent'}[th.dataset.sortKey]||th.dataset.sortKey)+(selected?' '+(state.dir==='asc'?'ascending':'descending'):''));
  }
 }
 function chooseSort(type,key){
@@ -100,7 +103,7 @@ function render(cfg,data){
  exportRows=active.map(x=>({...x,...(prices.get(x.ticker)||{})}));
  const etfBody=tableBody('etfRows','etfSection'),stockBody=tableBody('stockRows','stockSection');
  etfBody.replaceChildren();stockBody.replaceChildren();const fundBody=$('fundSection')?tableBody('fundRows','fundSection'):null;if(fundBody)fundBody.replaceChildren();let successful=[];
- for(const x of active){const q=prices.get(x.ticker)||{},tr=document.createElement('tr');tr.dataset.ticker=x.ticker;tr.dataset.region=x.region||'';const tickerCell=cell(tr,'');const tickerLink=document.createElement('a');tickerLink.textContent=x.ticker;tickerLink.href='https://finance.yahoo.com/quote/'+encodeURIComponent(x.ticker)+'/';tickerLink.target='_blank';tickerLink.rel='noopener noreferrer';tickerLink.setAttribute('aria-label',x.ticker+' on Yahoo Finance (opens in a new tab)');tickerCell.append(tickerLink);cell(tr,x.region);const name=cell(tr,x.name+(q.currency?' ('+q.currency+')':''));const note=document.createElement('small');note.className='row-note';note.textContent=q.refresh_error?'Refresh failed · '+sg(q.price_as_of):q.price_as_of?'Market time: '+sg(q.price_as_of):'Price pending';if(q.ath_error)note.textContent+=' · Using saved ATH — latest update failed.';name.append(note);if(q.price_retrieved_at&&!q.refresh_error)successful.push(q.price_retrieved_at);cell(tr,fmt(q.prev_close));cell(tr,pct(q.prev_day_pct_change),cls(q.prev_day_pct_change));cell(tr,fmt(q.current_price));cell(tr,pct(q.current_pct_change),cls(q.current_pct_change));const ath=cell(tr,fmt(q.ath));if(q.ath_error){ath.title=q.ath_error;ath.className='warning';}cell(tr,pct(q.drawdown_pct),cls(q.drawdown_pct));cell(tr,valid(q.dividend_per_share)?Number(q.dividend_per_share).toFixed(4):'—');cell(tr,valid(q.dividend_yield_pct)?Number(q.dividend_yield_pct).toFixed(2)+'%':'—');(x.type==='ETF'?etfBody:x.type==='Fund'&&fundBody?fundBody:stockBody).append(tr);}
+ for(const x of active){const q=prices.get(x.ticker)||{},tr=document.createElement('tr');tr.dataset.ticker=x.ticker;tr.dataset.region=x.region||'';tr.dataset.currentPct=valid(q.current_pct_change)?q.current_pct_change:'';tr.dataset.drawdown=valid(q.drawdown_pct)?q.drawdown_pct:'';tr.dataset.dividendYield=valid(q.dividend_yield_pct)?q.dividend_yield_pct:'';const tickerCell=cell(tr,'');const tickerLink=document.createElement('a');tickerLink.textContent=x.ticker;tickerLink.href='https://finance.yahoo.com/quote/'+encodeURIComponent(x.ticker)+'/';tickerLink.target='_blank';tickerLink.rel='noopener noreferrer';tickerLink.setAttribute('aria-label',x.ticker+' on Yahoo Finance (opens in a new tab)');tickerCell.append(tickerLink);cell(tr,x.region);const name=cell(tr,x.name+(q.currency?' ('+q.currency+')':''));const note=document.createElement('small');note.className='row-note';note.textContent=q.refresh_error?'Refresh failed · '+sg(q.price_as_of):q.price_as_of?'Market time: '+sg(q.price_as_of):'Price pending';if(q.ath_error)note.textContent+=' · Using saved ATH — latest update failed.';name.append(note);if(q.price_retrieved_at&&!q.refresh_error)successful.push(q.price_retrieved_at);cell(tr,fmt(q.prev_close));cell(tr,pct(q.prev_day_pct_change),cls(q.prev_day_pct_change));cell(tr,fmt(q.current_price));cell(tr,pct(q.current_pct_change),cls(q.current_pct_change));const ath=cell(tr,fmt(q.ath));if(q.ath_error){ath.title=q.ath_error;ath.className='warning';}cell(tr,pct(q.drawdown_pct),cls(q.drawdown_pct));cell(tr,valid(q.dividend_per_share)?Number(q.dividend_per_share).toFixed(4):'—');cell(tr,valid(q.dividend_yield_pct)?Number(q.dividend_yield_pct).toFixed(2)+'%':'—');(x.type==='ETF'?etfBody:x.type==='Fund'&&fundBody?fundBody:stockBody).append(tr);}
  for(const [type,id] of [['ETF','etf'],['Stock','stock'],['Fund','fund']]){const allCount=allActive.filter(x=>x.type===type).length,count=active.filter(x=>x.type===type).length,hidden=allCount-count,section=$(id+'Section');if(!section)continue;section.style.display=count?'':'none';$(id+'Count').textContent='Total '+(type==='ETF'?'ETFs':type==='Fund'?'Funds':'Stocks')+': '+count+(hidden?' · '+hidden+' hidden':'');}
  sortTable('ETF');sortTable('Stock');sortTable('Fund');
  const latestPriceTime=successful.sort().at(-1)||allActive.map(x=>prices.get(x.ticker)?.price_retrieved_at).filter(Boolean).sort().at(-1),hiddenCount=allActive.length-active.length;
@@ -113,10 +116,11 @@ async function refresh(){if(running)return;running=true;try{const rows=await loa
 for(const head of document.querySelectorAll('thead')){
  const type=head.closest('#etfSection')?'ETF':head.closest('#fundSection')?'Fund':'Stock',tr=document.createElement('tr');
  const headerLines={'Prev Day Close':'Prev Day<br>Close','Prev Day % Chg':'Prev Day %<br>Chg','Current Price':'Current<br>Price','Current % Chg':'Current %<br>Chg','All-Time High':'All-Time<br>High','Drawdown %':'Drawdown<br>%','Dividend / Share':'Dividend /<br>Share','Dividend Yield %':'Dividend<br>Yield %'};
+ const sortKeys={'Ticker':'ticker','Region / Market':'region','Current % Chg':'currentPct','Drawdown %':'drawdown','Dividend Yield %':'dividendYield'};
 for(const text of ['Ticker','Region / Market','ETF / Stock / Trust Name','Prev Day Close','Prev Day % Chg','Current Price','Current % Chg','All-Time High','Drawdown %','Dividend / Share','Dividend Yield %']){
   const th=document.createElement('th');
-  if(text==='Ticker'||text==='Region / Market'){
-   const key=text==='Ticker'?'ticker':'region',button=document.createElement('button'),arrow=document.createElement('span');
+  if(sortKeys[text]){
+   const key=sortKeys[text],button=document.createElement('button'),arrow=document.createElement('span');
    th.dataset.sortKey=key;th.setAttribute('aria-sort','none');button.type='button';button.className='sort-heading';
    button.append(document.createTextNode(text+' '));arrow.className='sort-arrow';arrow.textContent='↕';button.append(arrow);
    button.setAttribute('aria-label','Sort '+(key==='ticker'?'ticker':'region or market'));button.onclick=()=>chooseSort(type,key);th.append(button);
