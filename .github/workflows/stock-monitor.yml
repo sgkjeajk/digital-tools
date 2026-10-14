@@ -92,6 +92,9 @@ jobs:
               run_count=1
             fi
           fi
+          if [ "$TRIGGER_EVENT" = "workflow_dispatch" ] && [ "${REFRESH_DIVIDENDS:-false}" = "true" ]; then
+            run_count=1
+          fi
           if [ "$run_count" != "1" ]; then
           export TOPUP_CHECKER_CYCLES="$run_count"
           export MAX_ACTIVE_CHECKERS="$max_active_checkers"
