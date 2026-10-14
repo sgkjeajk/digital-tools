@@ -4,7 +4,7 @@ import json
 import urllib.parse
 from market_service import ROOT, atomic, fetch, finite, now, read_config, validate
 
-FIELDS = ('dividend_per_share','dividend_yield_pct','dividend_declaration_date','ex_dividend_date','dividend_payment_date')
+FIELDS = ('dividend_per_share','dividend_yield_pct','ex_dividend_date')
 
 def date_value(value):
     if isinstance(value,dict):
@@ -36,21 +36,6 @@ def get_one(ticker, price):
             result['dividend_per_share']=rows[-1][1] if rows else None
             result['dividend_yield_pct']=annual/price*100 if rows and finite(price) and price>0 else None
             result['ex_dividend_date']=date_value(rows[-1][0]) if rows else None
-            result['dividend_declaration_date']=None
-            result['dividend_payment_date']=None
-            # Calendar events are not universally provided by Yahoo Finance.
-            for summary_host in ('query1.finance.yahoo.com','query2.finance.yahoo.com'):
-                try:
-                    summary_url='https://'+summary_host+'/v10/finance/quoteSummary/'+urllib.parse.quote(ticker)+'?modules=calendarEvents'
-                    summary=json.loads(fetch(summary_url))
-                    records=(summary.get('quoteSummary',{}).get('result') or [])
-                    if len(records)!=1: continue
-                    div=(records[0].get('calendarEvents') or {}).get('dividend') or {}
-                    result['ex_dividend_date']=date_value(div.get('exDividendDate')) or result['ex_dividend_date']
-                    result['dividend_payment_date']=date_value(div.get('paymentDate'))
-                    result['dividend_declaration_date']=date_value(div.get('declarationDate'))
-                    break
-                except Exception: continue
             result['dividend_error']=None
             return result
         except Exception as error:
@@ -76,9 +61,12 @@ def run():
     for update in updates:
         prior=previous.get(update['ticker'],{})
         if update.get('dividend_error'):
-            rows.append({**prior,**{k:v for k,v in update.items() if k not in FIELDS}})
+            row={**prior,**{k:v for k,v in update.items() if k not in FIELDS}}
         else:
-            rows.append({**prior,**update})
+            row={**prior,**update}
+        for obsolete in ('dividend_declaration_date','dividend_payment_date','dividend_record_date','dividend_date_source','dividend_date_provider_error'):
+            row.pop(obsolete,None)
+        rows.append(row)
     result={'generated_at':now(),'config_revision':cfg.get('revision',0),'instruments':rows}
     atomic(old_path,result)
     print('Dividend refresh completed:',len(rows),'tickers;',sum(bool(x.get('dividend_error')) for x in rows),'unavailable')
