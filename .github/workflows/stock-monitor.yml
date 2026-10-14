@@ -32,6 +32,11 @@ on:
         required: false
         default: ''
         type: string
+      refreshDividends:
+        description: Refresh dividend and yield fields once
+        required: false
+        default: 'false'
+        type: string
 permissions:
   contents: write
   actions: write
