@@ -357,10 +357,32 @@ def previous_day_change(ticker,price_as_of):
             errors.append(str(error))
     raise ValueError('Historical closes unavailable across Yahoo sources: '+'; '.join(errors[-3:]))
 
-def retrieve(x,old,history=False):
+def dividends(ticker,current_price):
+    """Retrieve dividend events during the scheduled dividend refresh."""
+    period1=int((dt.datetime.now(dt.timezone.utc)-dt.timedelta(days=400)).timestamp())
+    period2=int(dt.datetime.now(dt.timezone.utc).timestamp())
+    for host in ('query1.finance.yahoo.com','query2.finance.yahoo.com'):
+        try:
+            url='https://'+host+'/v8/finance/chart/'+urllib.parse.quote(ticker)+'?period1='+str(period1)+'&period2='+str(period2)+'&interval=1d&events=div'
+            payload=json.loads(fetch(url)); results=payload.get('chart',{}).get('result') or []
+            if len(results)!=1: raise ValueError('No unique dividend chart result')
+            events=(results[0].get('events') or {}).get('dividends') or {}
+            rows=sorted((int(v['date']),float(v['amount'])) for v in events.values() if finite(v.get('amount')) and float(v['amount'])>=0)
+            if not rows:
+                return {'dividend_per_share':None,'dividend_yield_pct':None,'dividend_as_of':None,'dividend_retrieved_at':now(),'dividend_error':None}
+            cutoff=int((dt.datetime.now(dt.timezone.utc)-dt.timedelta(days=365)).timestamp())
+            annual=sum(amount for stamp,amount in rows if stamp>=cutoff)
+            stamp,amount=rows[-1]
+            return {'dividend_per_share':amount,'dividend_yield_pct':annual/current_price*100 if finite(current_price) and current_price>0 else None,'dividend_as_of':dt.datetime.fromtimestamp(stamp,dt.timezone.utc).isoformat(),'dividend_retrieved_at':now(),'dividend_error':None}
+        except Exception:
+            continue
+    return {'dividend_error':'Dividend sources unavailable; saved dividend values retained.','dividend_retrieved_at':now()}
+
+def retrieve(x,old,history=False,include_dividend=False):
     result={**old,**x}
     try:
         result.update(quote(x['ticker']))
+        if include_dividend: result.update(dividends(x['ticker'],result.get('current_price')))
         result['refresh_error']=None
         try: result.update(previous_day_change(x['ticker'],result['price_as_of']))
         except Exception as error:
@@ -389,7 +411,7 @@ def retrieve(x,old,history=False):
             result['ath_error']='Historical scrape failed; saved ATH and timestamp retained. '+str(error)
     return result
 
-def refresh(history=False, eligible_tickers=None):
+def refresh(history=False, eligible_tickers=None, include_dividend=False):
     with LOCK: cfg=validate(read_config())
     path=ROOT/'market-data.json'
     old=json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
@@ -398,7 +420,7 @@ def refresh(history=False, eligible_tickers=None):
     categories=cfg.get('priceChecker',{}).get('categories',DEFAULT_PRICE_CHECKER['categories'])
     selected=[x for x in active if (history or categories.get(x['type'],True)) and (eligible_tickers is None or x['ticker'] in eligible_tickers)]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        updated={x['ticker']:row for x,row in zip(selected,pool.map(lambda x:retrieve(x,prior.get(x['ticker'],{}),history),selected))}
+        updated={x['ticker']:row for x,row in zip(selected,pool.map(lambda x:retrieve(x,prior.get(x['ticker'],{}),history,include_dividend),selected))}
     # Preserve closed-market prices and their original retrieval timestamps.
     rows=[updated.get(x['ticker'],{**prior.get(x['ticker'],{}),**x}) for x in active]
     result={'generated_at':now(),'ath_since':'2000-01-01','config_revision':cfg.get('revision',0),'instruments':rows,'source':'Yahoo Finance; per-row timestamps and errors apply'}
