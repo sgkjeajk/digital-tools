@@ -112,14 +112,16 @@ async function load(){const [cfg,data]=await Promise.all([get('../data/stock-tic
 async function refresh(){if(running)return;running=true;try{const rows=await load();const failed=rows.filter(x=>x.refresh_error).length;$('status').textContent=failed?failed+' ticker(s) could not be updated; their saved prices and timestamps are retained.':'Latest saved data loaded. Last refresh & check completed: '+$('reference-time').textContent+'.';}catch(e){$('status').textContent=e.message;}finally{running=false;}}
 for(const head of document.querySelectorAll('thead')){
  const type=head.closest('#etfSection')?'ETF':head.closest('#fundSection')?'Fund':'Stock',tr=document.createElement('tr');
- for(const text of ['Ticker','Region / Market','ETF / Stock / Trust Name','Prev Day Close','Prev Day % Chg','Current Price','Current % Chg','All-Time High','Drawdown %','Dividend / Share','Dividend Yield %']){
+ const headerLines={'Prev Day Close':'Prev Day<br>Close','Prev Day % Chg':'Prev Day %<br>Chg','Current Price':'Current<br>Price','Current % Chg':'Current %<br>Chg','All-Time High':'All-Time<br>High','Drawdown %':'Drawdown<br>%','Dividend / Share':'Dividend /<br>Share','Dividend Yield %':'Dividend<br>Yield %'};
+for(const text of ['Ticker','Region / Market','ETF / Stock / Trust Name','Prev Day Close','Prev Day % Chg','Current Price','Current % Chg','All-Time High','Drawdown %','Dividend / Share','Dividend Yield %']){
   const th=document.createElement('th');
   if(text==='Ticker'||text==='Region / Market'){
    const key=text==='Ticker'?'ticker':'region',button=document.createElement('button'),arrow=document.createElement('span');
    th.dataset.sortKey=key;th.setAttribute('aria-sort','none');button.type='button';button.className='sort-heading';
    button.append(document.createTextNode(text+' '));arrow.className='sort-arrow';arrow.textContent='↕';button.append(arrow);
    button.setAttribute('aria-label','Sort '+(key==='ticker'?'ticker':'region or market'));button.onclick=()=>chooseSort(type,key);th.append(button);
-  }else th.textContent=text;
+  }else if(headerLines[text]) th.innerHTML=headerLines[text];
+  else th.textContent=text;
   tr.append(th);
  }
  head.append(tr);
