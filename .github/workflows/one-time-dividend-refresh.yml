@@ -1,4 +1,5 @@
 name: One-time Dividend Refresh
+# Manual verification run: dividend tickers are processed sequentially.
 on:
   push:
     branches: [main]
