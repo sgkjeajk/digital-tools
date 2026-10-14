@@ -1,5 +1,4 @@
 """Dividend-only retrieval. Writes dividend-data.json without modifying market prices."""
-import concurrent.futures
 import datetime as dt
 import json
 import urllib.parse
@@ -67,8 +66,12 @@ def run():
     market=json.loads(market_path.read_text(encoding='utf-8')) if market_path.exists() else {}
     prices={row['ticker']:row.get('current_price') for row in market.get('instruments',[])}
     tickers=[row['ticker'] for row in cfg['instruments'] if row.get('enabled')]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        updates=list(pool.map(lambda ticker:get_one(ticker,prices.get(ticker)),tickers))
+    # Retrieve one ticker at a time. This follows the price-checker execution
+    # model and avoids concurrent Yahoo requests competing for rate limits.
+    updates=[]
+    for index,ticker in enumerate(tickers,1):
+        print(f'Dividend checker {index}/{len(tickers)}: {ticker}',flush=True)
+        updates.append(get_one(ticker,prices.get(ticker)))
     rows=[]
     for update in updates:
         prior=previous.get(update['ticker'],{})
@@ -83,3 +86,4 @@ def run():
 
 if __name__=='__main__':
     run()
+
