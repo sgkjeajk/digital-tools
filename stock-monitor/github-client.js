@@ -47,7 +47,7 @@ window.ECGitHub=(()=>{
   return {...cfg,commit_sha:result.commit?.sha};
  }
  async function refreshPrices(progress=()=>{}){
-  const requestId=id();await dispatch({requestId});progress('Price retrieval queued in GitHub Actions. Waiting for its result…');
+  const requestId=id();await dispatch({requestId,refreshDividends:'true'});progress('Price, ATH and dividend retrieval queued in GitHub Actions. Waiting for its result…');
   for(let i=0;i<45;i++){await delay(4000);const data=await raw('market-data.json');if(data.request_id===requestId)return data;}
   throw Error('Price retrieval is still queued or running. Saved prices retain their timestamps. Check the updater workflow and refresh this page later.');
  }
