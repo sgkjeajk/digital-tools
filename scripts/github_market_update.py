@@ -96,6 +96,7 @@ if __name__=='__main__':
                 write_check_heartbeat(config,'skipped_recent_prices_fresh',request_id,history)
                 print('Skipped scraping: all open-market prices were successfully retrieved less than 10 minutes ago.')
                 raise SystemExit(0)
-        data=refresh(history=history,eligible_tickers=eligible);data['request_id']=request_id;data['workflow_run']=os.environ.get('GITHUB_RUN_ID');data['ath_refresh_requested']=history;data['last_check_completed_at']=data.get('generated_at') or now();data['last_check_status']='prices_refreshed'
+        include_dividend=os.environ.get('REFRESH_DIVIDENDS','false').lower()=='true'
+        data=refresh(history=history,eligible_tickers=eligible,include_dividend=include_dividend);data['request_id']=request_id;data['workflow_run']=os.environ.get('GITHUB_RUN_ID');data['ath_refresh_requested']=history;data['last_check_completed_at']=data.get('generated_at') or now();data['last_check_status']='prices_refreshed'
         atomic(ROOT/'market-data.json',data);atomic(ROOT/'data/stock-monitor.json',data)
         print('Price refresh completed:',len(data['instruments']),'tickers;',sum(bool(x.get('refresh_error')) for x in data['instruments']),'unavailable prices')
