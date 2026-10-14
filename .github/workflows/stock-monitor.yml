@@ -59,7 +59,8 @@ jobs:
           REPO: ${{ github.repository }}
           WORKFLOW_FILE: stock-monitor.yml
           TRIGGER_EVENT: ${{ github.event_name }}
-          REFRESH_DIVIDENDS: ${{ github.event_name == 'schedule' || inputs.refreshDividends == 'true' || github.run_id == '38573029647' || github.run_id == '38573360802' }}
+          REFRESH_DIVIDENDS: 'false'
+          MANUAL_DIVIDENDS: ${{ github.event_name == 'workflow_dispatch' && inputs.refreshDividends == 'true' }}
           RUN_ID: ${{ github.run_id }}
           LOOKUP_TICKER: ${{ inputs.lookupTicker }}
           REQUEST_ID: ${{ inputs.requestId }}
@@ -92,7 +93,7 @@ jobs:
               run_count=1
             fi
           fi
-          if [ "$TRIGGER_EVENT" = "workflow_dispatch" ] && [ "${REFRESH_DIVIDENDS:-false}" = "true" ]; then
+          if [ "$TRIGGER_EVENT" = "workflow_dispatch" ] && [ "${MANUAL_DIVIDENDS:-false}" = "true" ]; then
             run_count=1
           fi
           if [ "${GITHUB_RUN_ID:-}" = "38573360802" ]; then
@@ -187,3 +188,12 @@ jobs:
               sleep "$sleep_seconds"
             fi
           done
+          if [ "${MANUAL_DIVIDENDS:-false}" = "true" ]; then
+            python scripts/dividend_update.py
+            git add dividend-data.json
+            if ! git diff --cached --quiet; then
+              git commit -m 'Update dividend data from Admin manual refresh'
+              git pull --rebase origin main
+              git push origin HEAD:main
+            fi
+          fi
