@@ -16,20 +16,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Refresh dividends and yields
+      - name: Refresh prices, ATH and all three dividend dates
         env:
           REFRESH_DIVIDENDS: 'true'
-          REFRESH_ATH: 'false'
+          REFRESH_ATH: 'true'
           TRIGGER_EVENT: 'workflow_dispatch'
           REQUEST_ID: one-time-dividend-refresh
-        run: python scripts/github_market_update.py
+        run: |
+          python scripts/github_market_update.py
+          python scripts/dividend_update.py
       - name: Save refreshed data
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add market-data.json data/stock-monitor.json data/lookups
+          git add market-data.json data/stock-monitor.json data/lookups dividend-data.json
           if ! git diff --cached --quiet; then
-            git commit -m 'Refresh dividend and yield fields'
+            git commit -m 'Refresh ATH and all dividend date fields'
             git pull --rebase origin main
             git push origin HEAD:main
           fi
