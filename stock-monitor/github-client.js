@@ -48,7 +48,7 @@ window.ECGitHub=(()=>{
  }
  async function refreshPrices(progress=()=>{}){
   const requestId=id();await dispatch({requestId,refreshDividends:'true'});progress('Price, ATH and dividend retrieval queued in GitHub Actions. Waiting for its result…');
-  for(let i=0;i<45;i++){await delay(4000);const data=await raw('market-data.json');if(data.request_id===requestId)return data;}
+  for(let i=0;i<45;i++){await delay(4000);const data=await raw('market-data.json');if(data.request_id===requestId){progress('Prices updated. Waiting for dividend data to finish…');for(let j=0;j<45;j++){await delay(4000);const dividend=await raw('dividend-data.json').catch(()=>null);if(dividend&&dividend.generated_at&&Date.parse(dividend.generated_at)>=Date.parse(data.generated_at))return data;}throw Error('Prices updated but dividend refresh has not completed. Please check the workflow before relying on dividend values.');}}
   throw Error('Price retrieval is still queued or running. Saved prices retain their timestamps. Check the updater workflow and refresh this page later.');
  }
  async function startChecker(progress=()=>{}){
