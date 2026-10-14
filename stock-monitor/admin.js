@@ -88,7 +88,7 @@ function showDownloadFallback(file,text){
 function htmlEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function excelDate(){return new Date().toISOString().slice(0,10).replaceAll('-','');}
 async function loadMarketRows(){
- try{const data=await ECGitHub.raw('market-data.json');marketRows=new Map((data.instruments||[]).map(x=>[x.ticker,x]));}
+ try{const result=await ECGitHub.file('market-data.json');const data=result.data;marketRows=new Map((data.instruments||[]).map(x=>[x.ticker,x]));}
  catch(e){marketRows=new Map();}
 }
 function dividendValue(row,key,decimals){return row&&Number.isFinite(Number(row[key]))?Number(row[key]).toFixed(decimals):'—';}
