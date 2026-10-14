@@ -7,7 +7,7 @@ const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,maxActiveC
 const CHECKER_INTERVALS=[5,6,8,9,10];
 const CHECKER_TYPES=['ETF','Stock','Fund'];
 const $=id=>document.getElementById(id);
-let items=[],busy=false,editing=null,savedItems=[],savedRefresh=15,savedChecker=structuredClone(DEFAULT_PRICE_CHECKER),revision=0,connected=false;
+let items=[],busy=false,editing=null,savedItems=[],savedRefresh=15,savedChecker=structuredClone(DEFAULT_PRICE_CHECKER),revision=0,connected=false,marketRows=new Map();
 let displaySortKey=null,displaySortDirection='asc';
 function setDisplaySort(key){
  displaySortDirection=displaySortKey===key&&displaySortDirection==='asc'?'desc':'asc';
@@ -87,17 +87,24 @@ function showDownloadFallback(file,text){
 }
 function htmlEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function excelDate(){return new Date().toISOString().slice(0,10).replaceAll('-','');}
+async function loadMarketRows(){
+ try{const data=await ECGitHub.raw('market-data.json');marketRows=new Map((data.instruments||[]).map(x=>[x.ticker,x]));}
+ catch(e){marketRows=new Map();}
+}
+function dividendValue(row,key,decimals){return row&&Number.isFinite(Number(row[key]))?Number(row[key]).toFixed(decimals):'—';}
 function excelRows(){
- return sort([...items]).map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+htmlEscape(r.type||'')+'</td><td>'+htmlEscape(r.ticker)+'</td><td>'+htmlEscape(r.name||'')+'</td><td>'+htmlEscape(r.market||'')+'</td><td>'+(r.enabled?'Yes':'No')+'</td><td>'+htmlEscape(r.source||'')+'</td></tr>').join('');
+ return sort([...items]).map((r,i)=>{const q=marketRows.get(r.ticker)||{};return '<tr><td>'+(i+1)+'</td><td>'+htmlEscape(r.type||'')+'</td><td>'+htmlEscape(r.ticker)+'</td><td>'+htmlEscape(r.name||'')+'</td><td>'+htmlEscape(r.market||'')+'</td><td>'+(r.enabled?'Yes':'No')+'</td><td>'+htmlEscape(r.source||'')+'</td><td>'+dividendValue(q,'dividend_per_share',4)+'</td><td>'+dividendValue(q,'dividend_yield_pct',2)+'%</td></tr>';}).join('');
 }
 function excelHtml(){
- return '<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:6px;text-align:left;white-space:nowrap}th{background:#dceef8;font-weight:bold}</style></head><body><h2>Market Watch Ticker List</h2><p>Sorted by Category, then Ticker. Exported: '+htmlEscape(new Date().toLocaleString())+'</p><table><thead><tr><th>#</th><th>Category</th><th>Ticker</th><th>Name</th><th>Region / Market</th><th>Enabled</th><th>Metadata Source</th></tr></thead><tbody>'+excelRows()+'</tbody></table></body></html>';
+ return '<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:6px;text-align:left;white-space:nowrap}th{background:#dceef8;font-weight:bold}</style></head><body><h2>Market Watch Ticker List</h2><p>Sorted by Category, then Ticker. Exported: '+htmlEscape(new Date().toLocaleString())+'</p><table><thead><tr><th>#</th><th>Category</th><th>Ticker</th><th>Name</th><th>Region / Market</th><th>Enabled</th><th>Metadata Source</th><th>Dividend / Share</th><th>Dividend Yield %</th></tr></thead><tbody>'+excelRows()+'</tbody></table></body></html>';
 }
-function excelExport(){
+async function excelExport(){
+ await loadMarketRows();
  const file=download('market-watch-tickers-'+excelDate()+'.xls',excelHtml(),'application/vnd.ms-excel;charset=utf-8');
  showDownloadFallback(file,'Excel export requested. If your phone did not download automatically,');
 }
-function viewExcel(){
+async function viewExcel(){
+ await loadMarketRows();
  const preview=$('excelPreviewRows');
  preview.innerHTML=excelRows();
  $('excelDialog').showModal();
