@@ -64,8 +64,6 @@ def run():
             row={**prior,**{k:v for k,v in update.items() if k not in FIELDS}}
         else:
             row={**prior,**update}
-        for obsolete in ('dividend_declaration_date','dividend_payment_date','dividend_record_date','dividend_date_source','dividend_date_provider_error'):
-            row.pop(obsolete,None)
         rows.append(row)
     result={'generated_at':now(),'config_revision':cfg.get('revision',0),'instruments':rows}
     atomic(old_path,result)
