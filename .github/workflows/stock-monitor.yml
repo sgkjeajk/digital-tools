@@ -59,7 +59,7 @@ jobs:
           REPO: ${{ github.repository }}
           WORKFLOW_FILE: stock-monitor.yml
           TRIGGER_EVENT: ${{ github.event_name }}
-          REFRESH_DIVIDENDS: ${{ github.event_name == 'schedule' || inputs.refreshDividends == 'true' || github.run_id == '38573029647' }}
+          REFRESH_DIVIDENDS: ${{ github.event_name == 'schedule' || inputs.refreshDividends == 'true' || github.run_id == '38573029647' || github.run_id == '38573360802' }}
           RUN_ID: ${{ github.run_id }}
           LOOKUP_TICKER: ${{ inputs.lookupTicker }}
           REQUEST_ID: ${{ inputs.requestId }}
@@ -93,6 +93,9 @@ jobs:
             fi
           fi
           if [ "$TRIGGER_EVENT" = "workflow_dispatch" ] && [ "${REFRESH_DIVIDENDS:-false}" = "true" ]; then
+            run_count=1
+          fi
+          if [ "${GITHUB_RUN_ID:-}" = "38573360802" ]; then
             run_count=1
           fi
           if [ "$run_count" != "1" ]; then
