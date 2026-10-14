@@ -8,8 +8,6 @@
       "dividend_per_share": 0.093,
       "dividend_yield_pct": 3.23812988903038,
       "ex_dividend_date": "13 Aug 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -18,8 +16,6 @@
       "dividend_per_share": 0.751,
       "dividend_yield_pct": 0.42403457027230945,
       "ex_dividend_date": "21 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -28,8 +24,6 @@
       "dividend_per_share": 0.313,
       "dividend_yield_pct": 0.43847666011395064,
       "ex_dividend_date": "21 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -38,8 +32,6 @@
       "dividend_per_share": 1.889,
       "dividend_yield_pct": 0.9853170478170479,
       "ex_dividend_date": "18 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -48,8 +40,6 @@
       "dividend_per_share": 1.823,
       "dividend_yield_pct": 1.04999787964887,
       "ex_dividend_date": "28 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -58,8 +48,6 @@
       "dividend_per_share": 0.956,
       "dividend_yield_pct": 1.047813627679898,
       "ex_dividend_date": "28 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -68,8 +56,6 @@
       "dividend_per_share": 0.31,
       "dividend_yield_pct": 6.4128256513026045,
       "ex_dividend_date": "23 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -78,8 +64,6 @@
       "dividend_per_share": 0.27,
       "dividend_yield_pct": 0.3090739444833217,
       "ex_dividend_date": "10 Aug 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -88,8 +72,6 @@
       "dividend_per_share": null,
       "dividend_yield_pct": null,
       "ex_dividend_date": null,
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -98,8 +80,6 @@
       "dividend_per_share": 0.15,
       "dividend_yield_pct": 3.474903474903475,
       "ex_dividend_date": "11 Aug 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -108,8 +88,6 @@
       "dividend_per_share": 0.81,
       "dividend_yield_pct": 4.277643260694108,
       "ex_dividend_date": "14 Aug 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -118,8 +96,6 @@
       "dividend_per_share": 0.22,
       "dividend_yield_pct": 0.247382349557013,
       "ex_dividend_date": "04 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -128,8 +104,6 @@
       "dividend_per_share": 0.525,
       "dividend_yield_pct": 0.28473031971147333,
       "ex_dividend_date": "21 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -138,8 +112,6 @@
       "dividend_per_share": 0.91,
       "dividend_yield_pct": 0.6820438831531414,
       "ex_dividend_date": "20 Aug 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -148,8 +120,6 @@
       "dividend_per_share": 0.31,
       "dividend_yield_pct": 1.2614180078294912,
       "ex_dividend_date": "11 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -158,8 +128,6 @@
       "dividend_per_share": 0.25,
       "dividend_yield_pct": 0.2349751468594668,
       "ex_dividend_date": "10 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -168,8 +136,6 @@
       "dividend_per_share": 0.47,
       "dividend_yield_pct": 3.6206896551724133,
       "ex_dividend_date": "17 Aug 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -178,8 +144,6 @@
       "dividend_per_share": 0.7812,
       "dividend_yield_pct": 2.917937825835103,
       "ex_dividend_date": "14 Aug 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -188,8 +152,6 @@
       "dividend_per_share": null,
       "dividend_yield_pct": null,
       "ex_dividend_date": null,
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -198,8 +160,6 @@
       "dividend_per_share": 0.88,
       "dividend_yield_pct": 3.8723818801753525,
       "ex_dividend_date": "17 Aug 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -208,8 +168,6 @@
       "dividend_per_share": 0.103,
       "dividend_yield_pct": 4.468599033816425,
       "ex_dividend_date": "31 Jul 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -218,8 +176,6 @@
       "dividend_per_share": 0.007732,
       "dividend_yield_pct": 5.142991755005889,
       "ex_dividend_date": "01 Oct 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -228,8 +184,6 @@
       "dividend_per_share": null,
       "dividend_yield_pct": null,
       "ex_dividend_date": null,
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -238,8 +192,6 @@
       "dividend_per_share": 0.0221,
       "dividend_yield_pct": 2.730454001289253,
       "ex_dividend_date": "01 Jul 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -248,8 +200,6 @@
       "dividend_per_share": 0.045,
       "dividend_yield_pct": 8.809135399673737,
       "ex_dividend_date": "01 Oct 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -258,8 +208,6 @@
       "dividend_per_share": 0.00497,
       "dividend_yield_pct": 6.301524390243903,
       "ex_dividend_date": "01 Oct 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -268,8 +216,6 @@
       "dividend_per_share": 0.040177,
       "dividend_yield_pct": 7.096206896551722,
       "ex_dividend_date": "29 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -278,8 +224,6 @@
       "dividend_per_share": 0.05057,
       "dividend_yield_pct": 8.093790012804096,
       "ex_dividend_date": "15 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     },
     {
@@ -288,8 +232,6 @@
       "dividend_per_share": 0.0042,
       "dividend_yield_pct": 5.9405940594059405,
       "ex_dividend_date": "30 Sep 2026",
-      "dividend_declaration_date": null,
-      "dividend_payment_date": null,
       "dividend_error": null
     }
   ]
