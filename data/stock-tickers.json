@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": 35,
+  "revision": 36,
   "refreshIntervalMinutes": 15,
   "priceChecker": {
     "enabled": true,
@@ -13,7 +13,7 @@
       "Fund": false
     }
   },
-  "saved_at": "2026-10-15T14:54:39.323Z",
+  "saved_at": "2026-10-15T15:22:55.177Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -266,6 +266,24 @@
       "region": "SES",
       "type": "Fund",
       "metadata_source": "Yahoo Finance quote webpage"
+    },
+    {
+      "ticker": "0P0000IYVB.SI",
+      "enabled": true,
+      "show": true,
+      "name": "BGF World Gold A2 SGD Hedged",
+      "region": "SES",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance quote webpage"
+    },
+    {
+      "ticker": "0P0000IYVJ.SI",
+      "enabled": true,
+      "show": true,
+      "name": "BGF World Energy A2 SGD Hedged",
+      "region": "SES",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance individual ticker chart"
     },
     {
       "ticker": "0P0000TZQ7.SI",
