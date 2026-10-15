@@ -62,7 +62,7 @@ function chooseSort(type,key){
  const state=tableSort[type];state.dir=state.key===key&&state.dir==='asc'?'desc':'asc';state.key=key;sortTable(type);
 }
 async function get(path){
- const pageUrl=new URL(path,location.href),relative=pageUrl.pathname.replace(/^\\/digital-tools\\//,'');
+ const pageUrl=new URL(path,location.href),relative=pageUrl.pathname.replace(/^\/digital-tools\//,'');
  const urls=[pageUrl.toString()+'?ts='+Date.now(),'https://raw.githubusercontent.com/sgkjeajk/digital-tools/main/'+relative+'?ts='+Date.now()];
  let last;
  for(const url of urls){
