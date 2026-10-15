@@ -1,0 +1,11 @@
+{
+  "request_id": "84e92f50-d036-485e-88ad-2689ea26c271",
+  "generated_at": "2026-10-15T15:21:55.660144Z",
+  "instrument": {
+    "ticker": "0P0000IYVJ.SI",
+    "name": "BGF World Energy A2 SGD Hedged",
+    "region": "SES",
+    "type": "Fund",
+    "metadata_source": "Yahoo Finance individual ticker chart"
+  }
+}
