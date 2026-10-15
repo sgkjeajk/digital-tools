@@ -1,0 +1,11 @@
+{
+  "request_id": "ffe0af6d-d636-462e-bde4-59124fcac713",
+  "generated_at": "2026-10-15T14:40:38.836474Z",
+  "instrument": {
+    "ticker": "GQC0.MU",
+    "name": "Fundsmith Equity Fund Feeder",
+    "region": "Munich",
+    "type": "ETF",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
