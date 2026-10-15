@@ -2,7 +2,7 @@
 // Credentials remain inside this closure and are never written to browser storage.
 window.ECGitHub=(()=>{
  const repo='sgkjeajk/digital-tools',branch='main',base='https://api.github.com/repos/'+repo;
- const MAX_TICKERS=100;
+ const MAX_TICKERS=200;
  const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,maxActiveCheckers:3,categories:{ETF:true,Stock:true,Fund:true}};
  const CHECKER_INTERVALS=[5,6,8,9,10];
  let credential='';const catalogs=new Map();
