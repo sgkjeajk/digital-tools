@@ -34,7 +34,7 @@ function renderSettings(allActive){
  if(!allActive.length){const empty=document.createElement('p');empty.textContent='No enabled tickers found.';list.append(empty);}
 }
 function sortTable(type){
- if(type==='Fund'&&!$('fundSection'))return;
+ if(!$(IDS[type]?.[1]))return;
  const tbody=tableBody(...(IDS[type]||IDS.Stock)),state=tableSort[type];
  if(state.key){
   const rows=[...tbody.querySelectorAll('tr[data-ticker]')];
