@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": 32,
+  "revision": 33,
   "refreshIntervalMinutes": 15,
   "priceChecker": {
     "enabled": true,
@@ -13,7 +13,7 @@
       "Fund": false
     }
   },
-  "saved_at": "2026-10-15T10:03:37.181Z",
+  "saved_at": "2026-10-15T14:41:06.922Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -23,6 +23,15 @@
       "region": "Singapore",
       "type": "ETF",
       "metadata_source": "State Street reference · 7 Oct 2026"
+    },
+    {
+      "ticker": "GQC0.MU",
+      "enabled": true,
+      "show": true,
+      "name": "Fundsmith Equity Fund Feeder",
+      "region": "Munich",
+      "type": "ETF",
+      "metadata_source": "Yahoo Finance quote webpage"
     },
     {
       "ticker": "QQQ",
