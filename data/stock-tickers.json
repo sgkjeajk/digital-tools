@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": 31,
+  "revision": 32,
   "refreshIntervalMinutes": 15,
   "priceChecker": {
     "enabled": true,
@@ -10,14 +10,15 @@
     "categories": {
       "ETF": true,
       "Stock": true,
-      "Fund": true
+      "Fund": false
     }
   },
-  "saved_at": "2026-10-15T05:57:19.052Z",
+  "saved_at": "2026-10-15T10:03:37.181Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
       "enabled": true,
+      "show": true,
       "name": "State Street SPDR Straits Times Index ETF",
       "region": "Singapore",
       "type": "ETF",
@@ -26,6 +27,7 @@
     {
       "ticker": "QQQ",
       "enabled": true,
+      "show": true,
       "name": "Invesco QQQ Trust, Series 1",
       "region": "United States",
       "type": "ETF",
@@ -34,6 +36,7 @@
     {
       "ticker": "QQQM",
       "enabled": true,
+      "show": true,
       "name": "Invesco NASDAQ 100 ETF",
       "region": "United States",
       "type": "ETF",
@@ -42,6 +45,7 @@
     {
       "ticker": "SPY",
       "enabled": true,
+      "show": true,
       "name": "State Street SPDR S&P 500 ETF Trust",
       "region": "United States",
       "type": "ETF",
@@ -50,6 +54,7 @@
     {
       "ticker": "VOO",
       "enabled": true,
+      "show": true,
       "name": "Vanguard S&P 500 ETF",
       "region": "United States",
       "type": "ETF",
@@ -58,6 +63,7 @@
     {
       "ticker": "VTI",
       "enabled": true,
+      "show": true,
       "name": "Vanguard Morningstar Total Stock Market ETF",
       "region": "United States",
       "type": "ETF",
@@ -66,6 +72,7 @@
     {
       "ticker": "1155.KL",
       "enabled": true,
+      "show": true,
       "name": "Malayan Banking Berhad",
       "region": "Kuala Lumpur",
       "type": "Stock",
@@ -74,6 +81,7 @@
     {
       "ticker": "AAPL",
       "enabled": true,
+      "show": true,
       "name": "Apple Inc. - Common Stock",
       "region": "United States",
       "type": "Stock",
@@ -82,6 +90,7 @@
     {
       "ticker": "AMZN",
       "enabled": true,
+      "show": true,
       "name": "Amazon.com, Inc. - Common Stock",
       "region": "United States",
       "type": "Stock",
@@ -90,6 +99,7 @@
     {
       "ticker": "BN4.SI",
       "enabled": true,
+      "show": true,
       "name": "Keppel Ltd.",
       "region": "Singapore",
       "type": "Stock",
@@ -98,6 +108,7 @@
     {
       "ticker": "BQD.SI",
       "enabled": true,
+      "show": true,
       "name": "Envictus International Holdings Limited",
       "region": "SES",
       "type": "Stock",
@@ -106,6 +117,7 @@
     {
       "ticker": "D05.SI",
       "enabled": true,
+      "show": true,
       "name": "DBS Group Holdings Ltd",
       "region": "Singapore",
       "type": "Stock",
@@ -114,6 +126,7 @@
     {
       "ticker": "GOOGL",
       "enabled": true,
+      "show": true,
       "name": "Alphabet Inc. - Class A Common Stock",
       "region": "United States",
       "type": "Stock",
@@ -122,6 +135,7 @@
     {
       "ticker": "META",
       "enabled": true,
+      "show": true,
       "name": "Meta Platforms, Inc. - Class A Common Stock",
       "region": "United States",
       "type": "Stock",
@@ -130,6 +144,7 @@
     {
       "ticker": "MSFT",
       "enabled": true,
+      "show": true,
       "name": "Microsoft Corporation - Common Stock",
       "region": "United States",
       "type": "Stock",
@@ -138,6 +153,7 @@
     {
       "ticker": "NDAQ",
       "enabled": true,
+      "show": true,
       "name": "Nasdaq, Inc. - Common Stock",
       "region": "United States",
       "type": "Stock",
@@ -146,6 +162,7 @@
     {
       "ticker": "NVDA",
       "enabled": true,
+      "show": true,
       "name": "NVIDIA Corporation - Common Stock",
       "region": "United States",
       "type": "Stock",
@@ -154,6 +171,7 @@
     {
       "ticker": "O39.SI",
       "enabled": true,
+      "show": true,
       "name": "Oversea-Chinese Banking Corporation Ltd",
       "region": "Singapore",
       "type": "Stock",
@@ -162,6 +180,7 @@
     {
       "ticker": "SHEL",
       "enabled": true,
+      "show": true,
       "name": "Shell plc",
       "region": "NYSE",
       "type": "Stock",
@@ -170,6 +189,7 @@
     {
       "ticker": "TSLA",
       "enabled": true,
+      "show": true,
       "name": "Tesla, Inc.  - Common Stock",
       "region": "United States",
       "type": "Stock",
@@ -178,6 +198,7 @@
     {
       "ticker": "U11.SI",
       "enabled": true,
+      "show": true,
       "name": "United Overseas Bank Ltd",
       "region": "Singapore",
       "type": "Stock",
@@ -186,6 +207,7 @@
     {
       "ticker": "Z74.SI",
       "enabled": true,
+      "show": true,
       "name": "Singapore Telecommunications Limited",
       "region": "SES",
       "type": "Stock",
@@ -194,6 +216,7 @@
     {
       "ticker": "0P00006G0E.SI",
       "enabled": true,
+      "show": true,
       "name": "Schroder Multi-Asset Revolution A",
       "region": "SES",
       "type": "Fund",
@@ -202,6 +225,7 @@
     {
       "ticker": "0P00006OE7.SI",
       "enabled": true,
+      "show": true,
       "name": "PineBridge Acorns of Asia Balanced",
       "region": "Singapore",
       "type": "Fund",
@@ -210,6 +234,7 @@
     {
       "ticker": "0P00006ONO.SI",
       "enabled": true,
+      "show": true,
       "name": "FSSA Dividend Advantage A Qdis",
       "region": "SES",
       "type": "Fund",
@@ -218,6 +243,7 @@
     {
       "ticker": "0P00009VED.SI",
       "enabled": true,
+      "show": true,
       "name": "Franklin Income A(Mdis)SGD-H1",
       "region": "Singapore",
       "type": "Fund",
@@ -226,6 +252,7 @@
     {
       "ticker": "0P0000TZQ7.SI",
       "enabled": true,
+      "show": true,
       "name": "Schroder Asian Income SGD A Dis",
       "region": "Singapore",
       "type": "Fund",
@@ -234,6 +261,7 @@
     {
       "ticker": "0P0000Y077.SI",
       "enabled": true,
+      "show": true,
       "name": "PIMCO GIS Income E SGD Hedged Inc",
       "region": "SES",
       "type": "Fund",
@@ -242,6 +270,7 @@
     {
       "ticker": "0P0000Z32L.SI",
       "enabled": true,
+      "show": true,
       "name": "Allianz Income and Growth AMi3 H2 SGD",
       "region": "SES",
       "type": "Fund",
@@ -250,6 +279,7 @@
     {
       "ticker": "0P0001I7S9.SI",
       "enabled": true,
+      "show": true,
       "name": "Maybank Asian Growth and Inc A SGD Inc",
       "region": "SES",
       "type": "Fund",
