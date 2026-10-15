@@ -41,7 +41,7 @@ async function loadFundsData(){
 
 function fundCell(tr,text,className=''){const td=document.createElement('td');td.textContent=text;td.className=className;tr.append(td);return td;}
 function buildFundHeader(){
- const head=fund$('#fundSection')?.querySelector('thead');if(!head||head.children.length)return;
+ const head=fund$('#fundSection')?.querySelector('thead');if(!head)return;head.replaceChildren();
  const tr=document.createElement('tr');
  const columns=[['Ticker','ticker'],['Region / Market','region'],['Fund Name'],['Prev Day Close'],['Prev Day % Chg'],['Current Price'],['Current % Chg','currentPct'],['All-Time High'],['Drawdown %','drawdown'],['Dividend / Share'],['Dividend Yield %','dividendYield']];
  for(const [label,key] of columns){
@@ -80,7 +80,7 @@ function exportFunds(){
 }
 async function refreshFunds(){
  if(fundRunning)return;fundRunning=true;
- try{const loaded=await loadFundsData();fundRows=loaded.rows;renderFundRows();fund$('reference-time').textContent=fundTime(loaded.market.last_check_completed_at||loaded.market.generated_at);fund$('tracked').textContent=fundRows.length+' funds loaded';fund$('status').textContent='Latest fund data loaded. Last refresh & check completed: '+fund$('reference-time').textContent+'.';}
+ try{const loaded=await loadFundsData();fundRows=loaded.rows;renderFundRows();fund$('reference-time').textContent=fundTime(loaded.market.last_check_completed_at||loaded.market.generated_at);fund$('tracked').textContent='';fund$('status').textContent='Latest fund data loaded. Last refresh & check completed: '+fund$('reference-time').textContent+'.';}
  catch(error){fund$('status').textContent=error.message;}
  finally{fundRunning=false;}
 }
