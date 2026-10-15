@@ -41,7 +41,7 @@ async function loadFundsData(){
 
 function fundCell(tr,text,className=''){const td=document.createElement('td');td.textContent=text;td.className=className;tr.append(td);return td;}
 function buildFundHeader(){
- const head=fund$('#fundSection')?.querySelector('thead');if(!head)return;head.replaceChildren();
+ const head=fund$('#fundSection')?.querySelector('thead');if(!head||head.querySelector('tr'))return;
  const tr=document.createElement('tr');
  const columns=[['Ticker','ticker'],['Region / Market','region'],['Fund Name'],['Prev Day Close'],['Prev Day % Chg'],['Current Price'],['Current % Chg','currentPct'],['All-Time High'],['Drawdown %','drawdown'],['Dividend / Share'],['Dividend Yield %','dividendYield']];
  for(const [label,key] of columns){
@@ -49,6 +49,7 @@ function buildFundHeader(){
  }
  head.append(tr);
 }
+window.chooseFundSort=chooseFundSort;
 function chooseFundSort(key){fundSort.dir=fundSort.key===key&&fundSort.dir==='asc'?'desc':'asc';fundSort.key=key;renderFundRows();}
 function renderFundRows(){
  buildFundHeader();
