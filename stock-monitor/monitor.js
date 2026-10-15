@@ -34,7 +34,7 @@ function renderSettings(allActive){
  if(!allActive.length){const empty=document.createElement('p');empty.textContent='No enabled tickers found.';list.append(empty);}
 }
 function sortTable(type){
- if(!$(IDS[type]?.[1]))return;
+ if(type==='Fund'&&!$('fundSection'))return;
  const tbody=tableBody(...(IDS[type]||IDS.Stock)),state=tableSort[type];
  if(state.key){
   const rows=[...tbody.querySelectorAll('tr[data-ticker]')];
@@ -61,18 +61,7 @@ function sortTable(type){
 function chooseSort(type,key){
  const state=tableSort[type];state.dir=state.key===key&&state.dir==='asc'?'desc':'asc';state.key=key;sortTable(type);
 }
-async function get(path){
- const pageUrl=new URL(path,location.href),relative=pageUrl.pathname.replace(/^\/digital-tools\//,'');
- const urls=[pageUrl.toString()+'?ts='+Date.now(),'https://raw.githubusercontent.com/sgkjeajk/digital-tools/main/'+relative+'?ts='+Date.now()];
- let last;
- for(const url of urls){
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
-  try{const response=await fetch(url,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('HTTP '+response.status);return await response.json();}
-  catch(error){last=error;}
-  finally{clearTimeout(timer);}
- }
- throw Error('Saved data unavailable: '+(last?.name==='AbortError'?'request timed out':last?.message||'network error'));
-}
+async function get(path){const response=await fetch(path+'?ts='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('Saved data unavailable: '+response.status);return response.json();}
 function cell(tr,text,className=''){const td=document.createElement('td');td.textContent=text;td.className=className;tr.append(td);return td;}
 function tableBody(id,sectionId){let body=$(id);if(body)return body;body=document.createElement('tbody');body.id=id;$(sectionId).querySelector('table').append(body);return body;}
 function htmlEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -108,15 +97,14 @@ function exportExcel(){
 function render(cfg,data){
  latestCfg=cfg;latestData=data;
  const prices=new Map((data.instruments||[]).map(x=>[x.ticker,x]));
- const fundsOnly=window.MONITOR_FUNDS_ONLY===true;
- const allActive=cfg.instruments.filter(x=>x.enabled&&(fundsOnly?x.type==='Fund':(!x.type||x.type!=='Fund'||x.show!==false))).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
+ const allActive=cfg.instruments.filter(x=>x.enabled).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
  renderSettings(allActive);
- const active=fundsOnly?allActive:allActive.filter(x=>!hiddenTickers.has(x.ticker));
+ const active=allActive.filter(x=>!hiddenTickers.has(x.ticker));
  exportRows=active.map(x=>({...x,...(prices.get(x.ticker)||{})}));
- const etfBody=$('etfSection')?tableBody('etfRows','etfSection'):null,stockBody=$('stockSection')?tableBody('stockRows','stockSection'):null,fundBody=$('fundSection')?tableBody('fundRows','fundSection'):null;
- if(etfBody)etfBody.replaceChildren();if(stockBody)stockBody.replaceChildren();if(fundBody)fundBody.replaceChildren();let successful=[];
- for(const x of active){const q=prices.get(x.ticker)||{},tr=document.createElement('tr');tr.dataset.ticker=x.ticker;tr.dataset.region=x.region||'';tr.dataset.currentPct=valid(q.current_pct_change)?q.current_pct_change:'';tr.dataset.drawdown=valid(q.drawdown_pct)?q.drawdown_pct:'';tr.dataset.dividendYield=valid(q.dividend_yield_pct)?q.dividend_yield_pct:'';const tickerCell=cell(tr,'');const tickerLink=document.createElement('a');tickerLink.textContent=x.ticker;tickerLink.href='https://finance.yahoo.com/quote/'+encodeURIComponent(x.ticker)+'/';tickerLink.target='_blank';tickerLink.rel='noopener noreferrer';tickerLink.setAttribute('aria-label',x.ticker+' on Yahoo Finance (opens in a new tab)');tickerCell.append(tickerLink);cell(tr,x.region);const name=cell(tr,x.name+(q.currency?' ('+q.currency+')':''));const note=document.createElement('small');note.className='row-note';note.textContent=q.refresh_error?'Refresh failed · '+sg(q.price_as_of):q.price_as_of?'Market time: '+sg(q.price_as_of):'Price pending';if(q.ath_error)note.textContent+=' · Using saved ATH — latest update failed.';name.append(note);if(q.price_retrieved_at&&!q.refresh_error)successful.push(q.price_retrieved_at);cell(tr,fmt(q.prev_close));cell(tr,pct(q.prev_day_pct_change),cls(q.prev_day_pct_change));cell(tr,fmt(q.current_price));cell(tr,pct(q.current_pct_change),cls(q.current_pct_change));const ath=cell(tr,fmt(q.ath));if(q.ath_error){ath.title=q.ath_error;ath.className='warning';}cell(tr,pct(q.drawdown_pct),cls(q.drawdown_pct));cell(tr,valid(q.dividend_per_share)?Number(q.dividend_per_share).toFixed(4):'—');cell(tr,valid(q.dividend_yield_pct)?Number(q.dividend_yield_pct).toFixed(2)+'%':'—');const target=x.type==='ETF'?etfBody:x.type==='Fund'?fundBody:stockBody;if(target)target.append(tr);}
- for(const [type,id] of (fundsOnly?[['Fund','fund']]:[['ETF','etf'],['Stock','stock'],['Fund','fund']])){const allCount=allActive.filter(x=>x.type===type).length,count=active.filter(x=>x.type===type).length,hidden=allCount-count,section=$(id+'Section');if(!section)continue;section.style.display=count?'':'none';$(id+'Count').textContent='Total '+(type==='ETF'?'ETFs':type==='Fund'?'Funds':'Stocks')+': '+count+(hidden?' · '+hidden+' hidden':'');}
+ const etfBody=tableBody('etfRows','etfSection'),stockBody=tableBody('stockRows','stockSection');
+ etfBody.replaceChildren();stockBody.replaceChildren();const fundBody=$('fundSection')?tableBody('fundRows','fundSection'):null;if(fundBody)fundBody.replaceChildren();let successful=[];
+ for(const x of active){const q=prices.get(x.ticker)||{},tr=document.createElement('tr');tr.dataset.ticker=x.ticker;tr.dataset.region=x.region||'';tr.dataset.currentPct=valid(q.current_pct_change)?q.current_pct_change:'';tr.dataset.drawdown=valid(q.drawdown_pct)?q.drawdown_pct:'';tr.dataset.dividendYield=valid(q.dividend_yield_pct)?q.dividend_yield_pct:'';const tickerCell=cell(tr,'');const tickerLink=document.createElement('a');tickerLink.textContent=x.ticker;tickerLink.href='https://finance.yahoo.com/quote/'+encodeURIComponent(x.ticker)+'/';tickerLink.target='_blank';tickerLink.rel='noopener noreferrer';tickerLink.setAttribute('aria-label',x.ticker+' on Yahoo Finance (opens in a new tab)');tickerCell.append(tickerLink);cell(tr,x.region);const name=cell(tr,x.name+(q.currency?' ('+q.currency+')':''));const note=document.createElement('small');note.className='row-note';note.textContent=q.refresh_error?'Refresh failed · '+sg(q.price_as_of):q.price_as_of?'Market time: '+sg(q.price_as_of):'Price pending';if(q.ath_error)note.textContent+=' · Using saved ATH — latest update failed.';name.append(note);if(q.price_retrieved_at&&!q.refresh_error)successful.push(q.price_retrieved_at);cell(tr,fmt(q.prev_close));cell(tr,pct(q.prev_day_pct_change),cls(q.prev_day_pct_change));cell(tr,fmt(q.current_price));cell(tr,pct(q.current_pct_change),cls(q.current_pct_change));const ath=cell(tr,fmt(q.ath));if(q.ath_error){ath.title=q.ath_error;ath.className='warning';}cell(tr,pct(q.drawdown_pct),cls(q.drawdown_pct));cell(tr,valid(q.dividend_per_share)?Number(q.dividend_per_share).toFixed(4):'—');cell(tr,valid(q.dividend_yield_pct)?Number(q.dividend_yield_pct).toFixed(2)+'%':'—');(x.type==='ETF'?etfBody:x.type==='Fund'&&fundBody?fundBody:stockBody).append(tr);}
+ for(const [type,id] of [['ETF','etf'],['Stock','stock'],['Fund','fund']]){const allCount=allActive.filter(x=>x.type===type).length,count=active.filter(x=>x.type===type).length,hidden=allCount-count,section=$(id+'Section');if(!section)continue;section.style.display=count?'':'none';$(id+'Count').textContent='Total '+(type==='ETF'?'ETFs':type==='Fund'?'Funds':'Stocks')+': '+count+(hidden?' · '+hidden+' hidden':'');}
  sortTable('ETF');sortTable('Stock');sortTable('Fund');
  const latestPriceTime=successful.sort().at(-1)||allActive.map(x=>prices.get(x.ticker)?.price_retrieved_at).filter(Boolean).sort().at(-1),hiddenCount=allActive.length-active.length;
  $('reference-time').textContent=sg(data.last_check_completed_at||data.generated_at||latestPriceTime);$('tracked').textContent=active.length+' shown'+(hiddenCount?' · '+hiddenCount+' hidden':'')+' · '+allActive.length+' total instruments';
@@ -126,10 +114,10 @@ function render(cfg,data){
 async function load(){const [cfg,data,dividendData]=await Promise.all([get('../data/stock-tickers.json'),get('../market-data.json'),get('../dividend-data.json').catch(()=>null)]);if(dividendData&&Array.isArray(dividendData.instruments)){const byTicker=new Map(dividendData.instruments.map(x=>[x.ticker,x]));for(const row of (data.instruments||[])){const dividend=byTicker.get(row.ticker);if(dividend)Object.assign(row,dividend);}}return render(cfg,data);}
 async function refresh(){if(running)return;running=true;try{const rows=await load();const failed=rows.filter(x=>x.refresh_error).length;$('status').textContent=failed?failed+' ticker(s) could not be updated; their saved prices and timestamps are retained.':'Latest saved data loaded. Last refresh & check completed: '+$('reference-time').textContent+'.';}catch(e){$('status').textContent=e.message;}finally{running=false;}}
 for(const head of document.querySelectorAll('thead')){
- const fundsOnly=window.MONITOR_FUNDS_ONLY===true,type=head.closest('#etfSection')?'ETF':head.closest('#fundSection')?'Fund':'Stock',tr=document.createElement('tr');
+ const type=head.closest('#etfSection')?'ETF':head.closest('#fundSection')?'Fund':'Stock',tr=document.createElement('tr');
  const headerLines={'Prev Day Close':'Prev Day<br>Close','Prev Day % Chg':'Prev Day %<br>Chg','Current Price':'Current<br>Price','Current % Chg':'Current %<br>Chg','All-Time High':'All-Time<br>High','Drawdown %':'Drawdown<br>%','Dividend / Share':'Dividend /<br>Share','Dividend Yield %':'Dividend<br>Yield %'};
  const sortKeys={'Ticker':'ticker','Region / Market':'region','Current % Chg':'currentPct','Drawdown %':'drawdown','Dividend Yield %':'dividendYield'};
-for(const text of ['Ticker','Region / Market',fundsOnly?'Fund Name':'ETF / Stock / Trust Name','Prev Day Close','Prev Day % Chg','Current Price','Current % Chg','All-Time High','Drawdown %','Dividend / Share','Dividend Yield %']){
+for(const text of ['Ticker','Region / Market','ETF / Stock / Trust Name','Prev Day Close','Prev Day % Chg','Current Price','Current % Chg','All-Time High','Drawdown %','Dividend / Share','Dividend Yield %']){
   const th=document.createElement('th');
   if(sortKeys[text]){
    const key=sortKeys[text],button=document.createElement('button'),arrow=document.createElement('span');
@@ -142,17 +130,16 @@ for(const text of ['Ticker','Region / Market',fundsOnly?'Fund Name':'ETF / Stock
  }
  head.append(tr);
 }
-if(document.querySelector('#fundSection')&&!document.querySelector('#etfSection')&&!document.querySelector('#stockSection')){const fundHeader=document.querySelector('#fundSection thead tr');if(fundHeader&&fundHeader.cells[2])fundHeader.cells[2].textContent='Fund Name';}
-if($('jumpETF'))$('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});if($('jumpStock'))$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});
+$('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});
 const TAB_SECTIONS={jumpFund:'fundSection',jumpETF:'etfSection',jumpStock:'stockSection'};
 function setActiveTab(id){for(const t of Object.keys(TAB_SECTIONS)){const b=$(t);if(b)b.classList.toggle('secondary',t!==id);}}
 for(const t of Object.keys(TAB_SECTIONS)){const b=$(t);if(b)b.addEventListener('click',()=>{const s=$(TAB_SECTIONS[t]);if(t==='jumpFund'&&(!s||s.style.display==='none'))return;setActiveTab(t);});}
 if($('jumpFund'))$('jumpFund').onclick=()=>{const section=$('fundSection');if(!section||section.style.display==='none'){$('status').textContent='No funds are currently shown. Add a fund in Admin, or turn it on in Settings.';return;}section.scrollIntoView({behavior:'smooth'});};window.addEventListener('focus',()=>refresh(false));refresh(false);
 $('exportExcelButton').onclick=exportExcel;
-if($('settingsButton'))$('settingsButton').onclick=()=>toggleSettings();
-if($('settingsCloseButton'))$('settingsCloseButton').onclick=()=>toggleSettings(false);
-if($('showAllTickersButton'))$('showAllTickersButton').onclick=()=>{hiddenTickers.clear();saveHiddenTickers();rerender();};
-if($('hideAllEtfButton'))$('hideAllEtfButton').onclick=()=>setTypeVisible('ETF',false);
-if($('hideAllStockButton'))$('hideAllStockButton').onclick=()=>setTypeVisible('Stock',false);
+$('settingsButton').onclick=()=>toggleSettings(); if($('settingsLink'))$('settingsLink').onclick=e=>{e.preventDefault();toggleSettings();};
+$('settingsCloseButton').onclick=()=>toggleSettings(false);
+$('showAllTickersButton').onclick=()=>{hiddenTickers.clear();saveHiddenTickers();rerender();};
+$('hideAllEtfButton').onclick=()=>setTypeVisible('ETF',false);
+$('hideAllStockButton').onclick=()=>setTypeVisible('Stock',false);
 if($('hideAllFundButton'))$('hideAllFundButton').onclick=()=>setTypeVisible('Fund',false);
 
