@@ -1,0 +1,11 @@
+{
+  "request_id": "6e540ac8-c79d-413f-b86b-e2597b4328cc",
+  "generated_at": "2026-10-15T05:56:59.453887Z",
+  "instrument": {
+    "ticker": "BQD.SI",
+    "name": "Envictus International Holdings Limited",
+    "region": "SES",
+    "type": "Stock",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
