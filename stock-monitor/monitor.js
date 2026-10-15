@@ -61,7 +61,18 @@ function sortTable(type){
 function chooseSort(type,key){
  const state=tableSort[type];state.dir=state.key===key&&state.dir==='asc'?'desc':'asc';state.key=key;sortTable(type);
 }
-async function get(path){const response=await fetch(path+'?ts='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('Saved data unavailable: '+response.status);return response.json();}
+async function get(path){
+ const pageUrl=new URL(path,location.href),relative=pageUrl.pathname.replace(/^\\/digital-tools\\//,'');
+ const urls=[pageUrl.toString()+'?ts='+Date.now(),'https://raw.githubusercontent.com/sgkjeajk/digital-tools/main/'+relative+'?ts='+Date.now()];
+ let last;
+ for(const url of urls){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  try{const response=await fetch(url,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('HTTP '+response.status);return await response.json();}
+  catch(error){last=error;}
+  finally{clearTimeout(timer);}
+ }
+ throw Error('Saved data unavailable: '+(last?.name==='AbortError'?'request timed out':last?.message||'network error'));
+}
 function cell(tr,text,className=''){const td=document.createElement('td');td.textContent=text;td.className=className;tr.append(td);return td;}
 function tableBody(id,sectionId){let body=$(id);if(body)return body;body=document.createElement('tbody');body.id=id;$(sectionId).querySelector('table').append(body);return body;}
 function htmlEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
