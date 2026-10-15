@@ -102,7 +102,7 @@ class ValidateConfigTests(unittest.TestCase):
             market_service.validate(
                 {
                     "version": 1,
-                    "tickers": [{"ticker": f"AAPL{i}", "enabled": True} for i in range(101)],
+                    "tickers": [{"ticker": f"AAPL{i}", "enabled": True} for i in range(201)],
                 }
             )
 
