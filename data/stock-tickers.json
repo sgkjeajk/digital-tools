@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": 30,
+  "revision": 31,
   "refreshIntervalMinutes": 15,
   "priceChecker": {
     "enabled": true,
@@ -13,7 +13,7 @@
       "Fund": true
     }
   },
-  "saved_at": "2026-10-13T10:09:09.873Z",
+  "saved_at": "2026-10-15T05:57:19.052Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -94,6 +94,14 @@
       "region": "Singapore",
       "type": "Stock",
       "metadata_source": "Yahoo Finance quote page · 11 Oct 2026"
+    },
+    {
+      "ticker": "BQD.SI",
+      "enabled": true,
+      "name": "Envictus International Holdings Limited",
+      "region": "SES",
+      "type": "Stock",
+      "metadata_source": "Yahoo Finance quote webpage"
     },
     {
       "ticker": "D05.SI",
