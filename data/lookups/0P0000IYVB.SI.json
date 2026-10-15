@@ -1,0 +1,11 @@
+{
+  "request_id": "3594607b-192b-40ae-a14f-5889457f17c3",
+  "generated_at": "2026-10-15T15:22:42.141350Z",
+  "instrument": {
+    "ticker": "0P0000IYVB.SI",
+    "name": "BGF World Gold A2 SGD Hedged",
+    "region": "SES",
+    "type": "Fund",
+    "metadata_source": "Yahoo Finance quote webpage"
+  }
+}
