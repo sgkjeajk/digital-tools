@@ -97,7 +97,7 @@ function exportExcel(){
 function render(cfg,data){
  latestCfg=cfg;latestData=data;
  const prices=new Map((data.instruments||[]).map(x=>[x.ticker,x]));
- const allActive=cfg.instruments.filter(x=>x.enabled).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
+ const allActive=cfg.instruments.filter(x=>x.enabled&&(!x.type||x.type!=='Fund'||x.show!==false)).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
  renderSettings(allActive);
  const active=allActive.filter(x=>!hiddenTickers.has(x.ticker));
  exportRows=active.map(x=>({...x,...(prices.get(x.ticker)||{})}));
