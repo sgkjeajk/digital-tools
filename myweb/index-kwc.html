@@ -275,6 +275,12 @@ a[href]:focus-visible,.btn:focus-visible,button:focus-visible{outline:3px solid 
 .four-tools-picture img{max-height:220px!important;object-fit:contain!important}
 @media(max-width:650px){.hero h1{font-size:2rem!important}.hero .lead{font-size:1rem!important}.four-tools-picture img{max-height:180px!important}}
 </style>
+<style>
+/* One size smaller hero typography. */
+.hero h1{font-size:clamp(1.9rem,3.5vw,2.7rem)!important}
+.hero .lead{font-size:clamp(.95rem,1.3vw,1.1rem)!important}
+@media(max-width:650px){.hero h1{font-size:1.8rem!important}.hero .lead{font-size:.95rem!important}}
+</style>
 </head>
 <body id="top">
 <a class="skip" href="#main">Skip to main content</a>
