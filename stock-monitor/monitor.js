@@ -100,7 +100,7 @@ function render(cfg,data){
  const fundsOnly=window.MONITOR_FUNDS_ONLY===true;
  const allActive=cfg.instruments.filter(x=>x.enabled&&(fundsOnly?x.type==='Fund':(!x.type||x.type!=='Fund'||x.show!==false))).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
  renderSettings(allActive);
- const active=allActive.filter(x=>!hiddenTickers.has(x.ticker));
+ const active=fundsOnly?allActive:allActive.filter(x=>!hiddenTickers.has(x.ticker));
  exportRows=active.map(x=>({...x,...(prices.get(x.ticker)||{})}));
  const etfBody=$('etfSection')?tableBody('etfRows','etfSection'):null,stockBody=$('stockSection')?tableBody('stockRows','stockSection'):null,fundBody=$('fundSection')?tableBody('fundRows','fundSection'):null;
  if(etfBody)etfBody.replaceChildren();if(stockBody)stockBody.replaceChildren();if(fundBody)fundBody.replaceChildren();let successful=[];
