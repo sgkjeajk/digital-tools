@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK = threading.RLock()
 UA = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json,text/html'}
 CATALOG = {}
-MAX_TICKERS = 100
+MAX_TICKERS = 200
 DEFAULT_PRICE_CHECKER = {
     'enabled': True,
     'intervalMinutes': 8,
