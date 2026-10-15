@@ -2,7 +2,7 @@
 'use strict';
 const CATALOG={};
 const KEY='market-watch-admin.local.v1';
-const MAX_TICKERS=100;
+const MAX_TICKERS=200;
 const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,maxActiveCheckers:3,categories:{ETF:true,Stock:true,Fund:true}};
 const CHECKER_INTERVALS=[5,6,8,9,10];
 const CHECKER_TYPES=['ETF','Stock','Fund'];
