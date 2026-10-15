@@ -2,7 +2,7 @@
 // Credentials remain inside this closure and are never written to browser storage.
 window.ECGitHub=(()=>{
  const repo='sgkjeajk/digital-tools',branch='main',base='https://api.github.com/repos/'+repo;
- const MAX_TICKERS=100;
+ const MAX_TICKERS=200;
  const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,maxActiveCheckers:3,categories:{ETF:true,Stock:true,Fund:true}};
  const CHECKER_INTERVALS=[5,6,8,9,10];
  let credential='';const catalogs=new Map();
@@ -27,7 +27,7 @@ window.ECGitHub=(()=>{
  async function save(input,items){
   if(!credential)throw Error('Connect GitHub to save a shared configuration. Nothing was saved.');
   if(items.length>MAX_TICKERS)throw Error('Maximum '+MAX_TICKERS+' tickers.');const seen=new Set();
-  const instruments=items.map(x=>{const ticker=normalise(x.ticker);if(seen.has(ticker))throw Error('Duplicate ticker: '+ticker);seen.add(ticker);if(typeof x.enabled!=='boolean'||!['ETF','Stock','Fund'].includes(x.type)||!x.name||!x.market)throw Error('Verify every ticker before saving.');return {ticker,enabled:x.enabled,name:x.name,region:x.market,type:x.type,metadata_source:x.source||x.metadata_source};}).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
+  const instruments=items.map(x=>{const ticker=normalise(x.ticker);if(seen.has(ticker))throw Error('Duplicate ticker: '+ticker);seen.add(ticker);if(typeof x.enabled!=='boolean'||!['ETF','Stock','Fund'].includes(x.type)||!x.name||!x.market)throw Error('Verify every ticker before saving.');return {ticker,enabled:x.enabled,show:x.type==='Fund'?x.show!==false:true,name:x.name,region:x.market,type:x.type,metadata_source:x.source||x.metadata_source};}).sort((a,b)=>({ETF:0,Stock:1,Fund:2}[a.type]??3)-({ETF:0,Stock:1,Fund:2}[b.type]??3)||a.ticker.localeCompare(b.ticker));
   const interval=input.refreshIntervalMinutes;if(![5,10,15,30,60].includes(interval))throw Error('Invalid refresh interval.');
   const rawChecker=input.priceChecker||{},rawCategories=rawChecker.categories||{};
   const priceChecker={
