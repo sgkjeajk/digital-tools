@@ -80,7 +80,7 @@ function exportFunds(){
 }
 async function refreshFunds(){
  if(fundRunning)return;fundRunning=true;
- try{const loaded=await loadFundsData();fundRows=loaded.rows;renderFundRows();fund$('reference-time').textContent=fundTime(loaded.market.last_check_completed_at||loaded.market.generated_at);fund$('tracked').textContent='';fund$('status').textContent='Latest fund data loaded. Last refresh & check completed: '+fund$('reference-time').textContent+'.';}
+ try{const loaded=await loadFundsData();fundRows=loaded.rows;renderFundRows();fund$('reference-time').textContent=fundTime(loaded.market.last_check_completed_at||loaded.market.generated_at);fund$('tracked')?.replaceChildren();fund$('status').textContent='Latest fund data loaded. Last refresh & check completed: '+fund$('reference-time').textContent+'.';}
  catch(error){fund$('status').textContent=error.message;}
  finally{fundRunning=false;}
 }
