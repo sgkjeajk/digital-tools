@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": 34,
+  "revision": 35,
   "refreshIntervalMinutes": 15,
   "priceChecker": {
     "enabled": true,
@@ -13,7 +13,7 @@
       "Fund": false
     }
   },
-  "saved_at": "2026-10-15T14:41:59.355Z",
+  "saved_at": "2026-10-15T14:54:39.323Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
@@ -257,6 +257,15 @@
       "region": "Singapore",
       "type": "Fund",
       "metadata_source": "Yahoo Finance fund page · 11 Oct 2026"
+    },
+    {
+      "ticker": "0P0000AAP5.SI",
+      "enabled": true,
+      "show": true,
+      "name": "BGF World Mining A2 SGD Hedged",
+      "region": "SES",
+      "type": "Fund",
+      "metadata_source": "Yahoo Finance quote webpage"
     },
     {
       "ticker": "0P0000TZQ7.SI",
