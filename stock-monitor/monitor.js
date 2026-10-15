@@ -136,7 +136,7 @@ function setActiveTab(id){for(const t of Object.keys(TAB_SECTIONS)){const b=$(t)
 for(const t of Object.keys(TAB_SECTIONS)){const b=$(t);if(b)b.addEventListener('click',()=>{const s=$(TAB_SECTIONS[t]);if(t==='jumpFund'&&(!s||s.style.display==='none'))return;setActiveTab(t);});}
 if($('jumpFund'))$('jumpFund').onclick=()=>{const section=$('fundSection');if(!section||section.style.display==='none'){$('status').textContent='No funds are currently shown. Add a fund in Admin, or turn it on in Settings.';return;}section.scrollIntoView({behavior:'smooth'});};window.addEventListener('focus',()=>refresh(false));refresh(false);
 $('exportExcelButton').onclick=exportExcel;
-$('settingsButton').onclick=()=>toggleSettings(); if($('settingsLink'))$('settingsLink').onclick=e=>{e.preventDefault();toggleSettings();};
+$('settingsButton').onclick=()=>toggleSettings(); if($('settingsLink'))$('settingsLink').onclick=e=>{e.preventDefault();toggleSettings(); if(location.hash==='#settingsPanel')toggleSettings(true);};
 $('settingsCloseButton').onclick=()=>toggleSettings(false);
 $('showAllTickersButton').onclick=()=>{hiddenTickers.clear();saveHiddenTickers();rerender();};
 $('hideAllEtfButton').onclick=()=>setTypeVisible('ETF',false);
