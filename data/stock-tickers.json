@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": 33,
+  "revision": 34,
   "refreshIntervalMinutes": 15,
   "priceChecker": {
     "enabled": true,
@@ -13,7 +13,7 @@
       "Fund": false
     }
   },
-  "saved_at": "2026-10-15T14:41:06.922Z",
+  "saved_at": "2026-10-15T14:41:59.355Z",
   "instruments": [
     {
       "ticker": "ES3.SI",
