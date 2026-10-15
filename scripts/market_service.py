@@ -60,14 +60,19 @@ def page(ticker):
 def lookup(ticker):
     ticker=symbol(ticker)
     if ticker not in CATALOG:
-        data=page_quote(ticker)
-        kind=data.get('quoteType')
+        source='Yahoo Finance quote webpage'
+        try:
+            data=page_quote(ticker)
+        except Exception:
+            data=chart_metadata(ticker)
+            source='Yahoo Finance individual ticker chart'
+        kind=data.get('quoteType') or data.get('instrumentType')
         name=data.get('longName') or data.get('shortName')
-        market=data.get('fullExchangeName') or data.get('exchange')
+        market=data.get('fullExchangeName') or data.get('exchangeName') or data.get('exchange')
         type_map={'ETF':'ETF','EQUITY':'Stock','MUTUALFUND':'Fund','FUND':'Fund'}
         if kind not in type_map or not name or not market:
-            raise ValueError('No verified Stock/ETF/Fund metadata on webpage.')
-        return {'ticker':ticker,'name':name,'region':market,'type':type_map[kind],'metadata_source':'Yahoo Finance quote webpage'}
+            raise ValueError('No verified Stock/ETF/Fund metadata on Yahoo Finance.')
+        return {'ticker':ticker,'name':name,'region':market,'type':type_map[kind],'metadata_source':source}
     x=CATALOG[ticker]
     return {'ticker':ticker,'name':x['name'],'region':x['market'],'type':x['type'],'metadata_source':x['source']}
 
@@ -139,6 +144,22 @@ def page_quote(ticker,text=None):
     if not matches: raise ValueError('No exact-symbol quote on webpage')
     data=matches[0]
     return data
+
+def chart_metadata(ticker):
+    errors=[]
+    for host in ('query1.finance.yahoo.com','query2.finance.yahoo.com'):
+        try:
+            url='https://'+host+'/v8/finance/chart/'+urllib.parse.quote(ticker)+'?range=5d&interval=1d'
+            payload=json.loads(fetch(url))
+            items=payload.get('chart',{}).get('result') or []
+            if len(items)!=1: raise ValueError('No unique chart result')
+            meta=items[0].get('meta') or {}
+            if meta.get('symbol','').upper()!=ticker.upper(): raise ValueError('Chart ticker mismatch')
+            if not (meta.get('longName') or meta.get('shortName')): raise ValueError('Missing chart instrument name')
+            return meta
+        except Exception as error:
+            errors.append(host+': '+str(error))
+    raise ValueError('Yahoo Finance chart metadata unavailable: '+'; '.join(errors))
 
 def quote_webpage(ticker):
     data=page_quote(ticker)
