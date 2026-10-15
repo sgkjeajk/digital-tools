@@ -185,8 +185,8 @@ def quote_chart(ticker):
             if len(items)!=1: raise ValueError('No unique chart result')
             meta=items[0].get('meta') or {}
             if meta.get('symbol','').upper()!=ticker.upper(): raise ValueError('Chart ticker mismatch')
-            expected='SGD' if ticker.endswith('.SI') else 'USD'
-            if meta.get('currency')!=expected: raise ValueError('Unexpected quote currency')
+            currency=meta.get('currency')
+            if not isinstance(currency,str) or not currency: raise ValueError('Missing quote currency')
             cur=meta.get('regularMarketPrice')
             prev=meta.get('previousClose')
             if not finite(prev):
@@ -198,7 +198,7 @@ def quote_chart(ticker):
             if quote_time>dt.datetime.now(dt.timezone.utc)+dt.timedelta(minutes=5): raise ValueError('Future quote timestamp')
             return {'current_price':cur,'prev_close':prev,'current_pct_change':percentage(cur,prev),
                     'price_as_of':quote_time.isoformat(),'source':'Yahoo Finance individual ticker chart',
-                    'price_retrieved_at':now(),'currency':expected}
+                    'price_retrieved_at':now(),'currency':currency}
         except Exception as error: errors.append(host+': '+str(error))
     raise ValueError('Yahoo individual ticker chart unavailable: '+'; '.join(errors))
 
@@ -223,8 +223,7 @@ def quote_google(ticker):
     data=json.loads(process.stdout.strip())
     if data.get('source') not in ('Google Finance individual ticker webpage','Google Finance individual ticker (rendered)') or not finite(data.get('current_price')) or data['current_price']<=0:
         raise ValueError('Unverified Google quote')
-    expected='SGD' if ticker.endswith('.SI') else 'USD'
-    if data.get('currency')!=expected:raise ValueError('Google quote currency mismatch')
+    if not isinstance(data.get('currency'),str) or not data.get('currency'):raise ValueError('Google quote currency missing')
     quote_time=dt.datetime.fromisoformat(data['price_as_of'])
     if quote_time.tzinfo is None:raise ValueError('Missing Google quote timezone')
     age=dt.datetime.now(dt.timezone.utc)-quote_time
@@ -289,8 +288,7 @@ def historical_high_chart(ticker):
             item=items[0]
             meta=item.get('meta') or {}
             if meta.get('symbol','').upper()!=ticker.upper(): raise ValueError('Historical ticker mismatch')
-            expected='SGD' if ticker.endswith('.SI') else 'USD'
-            if meta.get('currency')!=expected: raise ValueError('Historical currency mismatch')
+            if not isinstance(meta.get('currency'),str) or not meta.get('currency'): raise ValueError('Historical currency missing')
             stamps=item.get('timestamp') or []
             quotes=item.get('indicators',{}).get('quote') or []
             highs=quotes[0].get('high') if quotes else []
