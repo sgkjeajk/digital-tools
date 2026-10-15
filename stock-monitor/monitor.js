@@ -131,7 +131,7 @@ for(const text of ['Ticker','Region / Market',fundsOnly?'Fund Name':'ETF / Stock
  }
  head.append(tr);
 }
-if($('jumpETF'))$('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});if($('jumpStock'))$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});
+if(document.querySelector('#fundSection')&&!document.querySelector('#etfSection')&&!document.querySelector('#stockSection')){const fundHeader=document.querySelector('#fundSection thead tr');if(fundHeader&&fundHeader.cells[2])fundHeader.cells[2].textContent='Fund Name';}\nif($('jumpETF'))$('jumpETF').onclick=()=>($('etfSection').style.display==='none'?$('stockSection'):$('etfSection')).scrollIntoView({behavior:'smooth'});if($('jumpStock'))$('jumpStock').onclick=()=>$('stockSection').scrollIntoView({behavior:'smooth'});
 const TAB_SECTIONS={jumpFund:'fundSection',jumpETF:'etfSection',jumpStock:'stockSection'};
 function setActiveTab(id){for(const t of Object.keys(TAB_SECTIONS)){const b=$(t);if(b)b.classList.toggle('secondary',t!==id);}}
 for(const t of Object.keys(TAB_SECTIONS)){const b=$(t);if(b)b.addEventListener('click',()=>{const s=$(TAB_SECTIONS[t]);if(t==='jumpFund'&&(!s||s.style.display==='none'))return;setActiveTab(t);});}
