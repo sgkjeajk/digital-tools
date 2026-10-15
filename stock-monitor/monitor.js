@@ -122,7 +122,7 @@ for(const text of ['Ticker','Region / Market','ETF / Stock / Trust Name','Prev D
   if(sortKeys[text]){
    const key=sortKeys[text],button=document.createElement('button'),arrow=document.createElement('span');
    th.dataset.sortKey=key;th.setAttribute('aria-sort','none');button.type='button';button.className='sort-heading';
-   button.append(document.createTextNode(text+' '));arrow.className='sort-arrow';arrow.textContent='↕';button.append(arrow);
+   button.innerHTML=(headerLines[text]||text)+' ';arrow.className='sort-arrow';arrow.textContent='↕';button.append(arrow);
    button.setAttribute('aria-label','Sort '+({ticker:'ticker',region:'region or market',currentPct:'current percent change',drawdown:'drawdown percent',dividendYield:'dividend yield percent'}[key]||key));button.onclick=()=>chooseSort(type,key);th.append(button);
   }else if(headerLines[text]) th.innerHTML=headerLines[text];
   else th.textContent=text;
