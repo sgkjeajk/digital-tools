@@ -97,8 +97,8 @@ class ValidateConfigTests(unittest.TestCase):
         self.assertEqual(result["priceChecker"]["cycles"], 12)
         self.assertFalse(result["priceChecker"]["categories"]["Fund"])
 
-    def test_rejects_more_than_100_tickers(self):
-        with self.assertRaisesRegex(ValueError, "Expected at most 100 tickers"):
+    def test_rejects_more_than_200_tickers(self):
+        with self.assertRaisesRegex(ValueError, "Expected at most 200 tickers"):
             market_service.validate(
                 {
                     "version": 1,
