@@ -143,3 +143,5 @@ $('hideAllEtfButton').onclick=()=>setTypeVisible('ETF',false);
 $('hideAllStockButton').onclick=()=>setTypeVisible('Stock',false);
 if($('hideAllFundButton'))$('hideAllFundButton').onclick=()=>setTypeVisible('Fund',false);
 
+
+const returnPreviousPageButton=$('returnPreviousPageButton'); if(returnPreviousPageButton)returnPreviousPageButton.onclick=()=>{if(history.length>1)history.back();else location.href='../../';};
