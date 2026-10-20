@@ -326,5 +326,82 @@ a[href]:focus-visible,.btn:focus-visible,button:focus-visible{outline:3px solid 
 </div></section>
 
 </main>
+<!-- KWC ONLY: Owner-requested admin links (2026-10-21). Preserve during updates.
+     Do not copy this block to syc.html, klz.html, index.html or any other page.
+     See myweb/AGENTS.md. -->
+<footer id="kwc-admin-links">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;font-size:.9rem">
+    <a href="#" data-admin-url="../market-watch-admin.html#adminRefreshPrices">Admin Stock Monitor Refresh</a>
+    <a href="#" data-admin-url="https://sgkjeajk.github.io/EverydayCompass/singapore-whats-on.html#admin-whats-on">Admin What's On</a>
+  </div>
+</footer>
+
+<p id="kwc-admin-status" class="wrap" role="status" style="font-size:.85rem;margin-top:12px"></p>
+<dialog id="kwc-admin-password" aria-labelledby="kwc-admin-password-title" style="width:min(420px,calc(100% - 32px));border:1px solid #dce3e8;border-radius:16px;padding:24px">
+ <h2 id="kwc-admin-password-title" style="margin-top:0">Admin access</h2>
+ <p>Enter the password. One attempt only; cancelling also locks the admin links until you leave this page and open it again.</p>
+ <form id="kwc-admin-password-form" style="padding:0;border:0;box-shadow:none">
+  <label for="kwc-admin-password-input">Password</label>
+  <input id="kwc-admin-password-input" type="password" autocomplete="off" autofocus>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:18px">
+   <button class="btn" type="submit">Continue</button>
+   <button class="btn light" id="kwc-admin-cancel" type="button">Cancel</button>
+  </div>
+ </form>
+</dialog>
+<!-- KWC ONLY: prompt on every admin click; failed/cancelled attempts lock both links.
+     Reload preserves the lock; leaving and re-entering resets it. -->
+<script id="kwc-admin-password-guard">
+(function(){
+ "use strict";
+ const footer=document.getElementById("kwc-admin-links");
+ const dialog=document.getElementById("kwc-admin-password");
+ const form=document.getElementById("kwc-admin-password-form");
+ const input=document.getElementById("kwc-admin-password-input");
+ const status=document.getElementById("kwc-admin-status");
+ const key="kwc-admin-links-locked-v1";
+ let locked=false, destination="";
+ function storedLock(){try{return sessionStorage.getItem(key)==="1";}catch(e){return locked;}}
+ function resetVisit(event){
+  const navigation=performance.getEntriesByType("navigation")[0];
+  if((event&&event.persisted)||!navigation||navigation.type!=="reload"){
+   try{sessionStorage.removeItem(key);}catch(e){}
+   locked=false;status.textContent="";
+  }else locked=storedLock();
+  if(locked) status.textContent="Admin links are locked. Leave this page and open it again to try.";
+ }
+ function lock(){
+  locked=true;
+  try{sessionStorage.setItem(key,"1");}catch(e){}
+  input.value="";destination="";
+  status.textContent="Admin links are locked. Leave this page and open it again to try.";
+ }
+ function requestAccess(event){
+  const link=event.target.closest("a[data-admin-url]");
+  if(!link||!footer.contains(link))return;
+  event.preventDefault();
+  if(locked||storedLock()){locked=true;status.textContent="Admin links are locked. Leave this page and open it again to try.";return;}
+  if(dialog.open)return;
+  destination=link.dataset.adminUrl;
+  input.value="";
+  dialog.showModal();
+  input.focus();
+ }
+ footer.addEventListener("click",requestAccess);
+ footer.addEventListener("auxclick",function(event){if(event.target.closest("a[data-admin-url]"))event.preventDefault();});
+ form.addEventListener("submit",function(event){
+  event.preventDefault();
+  if(locked||storedLock()){lock();dialog.close();return;}
+  if(input.value!=="kwc"){lock();dialog.close();return;}
+  const url=destination;input.value="";destination="";
+  dialog.close();
+  window.open(url,"_blank","noopener,noreferrer");
+ });
+ document.getElementById("kwc-admin-cancel").addEventListener("click",function(){lock();dialog.close();});
+ dialog.addEventListener("cancel",function(event){event.preventDefault();lock();dialog.close();});
+ window.addEventListener("pageshow",resetVisit);
+ resetVisit();
+})();
+</script>
 </body>
 </html>
