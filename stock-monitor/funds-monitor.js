@@ -10,7 +10,7 @@ let fundRows=[],fundRunning=false;
 
 async function fetchFundsJson(path){
  const url=new URL(path,location.href);
- const candidates=[url.toString()+'?fundsTs='+Date.now(),'https://raw.githubusercontent.com/myai118/digital-tools/main/'+url.pathname.replace(/^\/digital-tools\//,'')+'?fundsTs='+Date.now()];
+ const candidates=[url.toString()+'?fundsTs='+Date.now(),'https://raw.githubusercontent.com/sgkjeajk/digital-tools/main/'+url.pathname.replace(/^\/digital-tools\//,'')+'?fundsTs='+Date.now()];
  let last;
  for(const candidate of candidates){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);

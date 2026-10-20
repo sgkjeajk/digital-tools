@@ -52,7 +52,7 @@ test('saved Admin defaults are the exact tickers shown after a fresh monitor vis
  const panel=new Node('panel'),actions=new Node('actions'),status=new Node('status');
  panel.querySelector=()=>actions;
  const ctx={URL,JSON,Date,Set,Map,TextDecoder,TextEncoder,Uint8Array,atob,btoa,console,
-  document:{currentScript:{src:'https://myai118.github.io/digital-tools/stock-monitor/display-defaults.js'},createElement:tag=>new Node(tag),getElementById:id=>id==='settingsPanel'?panel:id==='ownerDefaultsStatus'?status:null},
+  document:{currentScript:{src:'https://sgkjeajk.github.io/digital-tools/stock-monitor/display-defaults.js'},createElement:tag=>new Node(tag),getElementById:id=>id==='settingsPanel'?panel:id==='ownerDefaultsStatus'?status:null},
   location:{pathname:'/digital-tools/stock-monitor/index.html'},window:{addEventListener(){}},
   async fetch(){return {ok:true,json:async()=>structuredClone(h.data)};}
  };

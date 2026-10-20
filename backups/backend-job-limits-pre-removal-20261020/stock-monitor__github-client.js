@@ -1,7 +1,7 @@
 'use strict';
 // Credentials remain inside this closure and are never written to browser storage.
 window.ECGitHub=(()=>{
- const repo='myai118/digital-tools',branch='main',base='https://api.github.com/repos/'+repo;
+ const repo='sgkjeajk/digital-tools',branch='main',base='https://api.github.com/repos/'+repo;
  const MAX_TICKERS=400;
  const DEFAULT_PRICE_CHECKER={enabled:true,intervalMinutes:8,cycles:30,maxActiveCheckers:3,categories:{ETF:true,Stock:true,Fund:true}};
  const CHECKER_INTERVALS=[5,6,8,9,10];
@@ -66,7 +66,7 @@ window.ECGitHub=(()=>{
   return {requestId,workflowUrl:'https://github.com/'+repo+'/actions/workflows/stock-monitor.yml'};
  }
  function mount(container){
-  container.innerHTML='<details><summary>Owner access — connect GitHub</summary><p>For shared saves and new price retrieval, use a fine-grained token restricted to <b>myai118/digital-tools</b>, with <b>Contents: read and write</b> and <b>Actions: read and write</b>. The token stays in this tab’s memory until you disconnect or reload. Never paste it into chat.</p><label>GitHub token <input type="password" autocomplete="off" spellcheck="false" aria-label="GitHub token"></label><button type="button" class="connect">Connect GitHub</button> <button type="button" class="disconnect">Disconnect</button><p class="auth-status" role="status">Not connected. Public viewing is available.</p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a restricted token</a> · <a href="https://github.com/myai118/digital-tools/actions/workflows/stock-monitor.yml" target="_blank" rel="noopener noreferrer">Check price updater</a></details>';
+  container.innerHTML='<details><summary>Owner access — connect GitHub</summary><p>For shared saves and new price retrieval, use a fine-grained token restricted to <b>sgkjeajk/digital-tools</b>, with <b>Contents: read and write</b> and <b>Actions: read and write</b>. The token stays in this tab’s memory until you disconnect or reload. Never paste it into chat.</p><label>GitHub token <input type="password" autocomplete="off" spellcheck="false" aria-label="GitHub token"></label><button type="button" class="connect">Connect GitHub</button> <button type="button" class="disconnect">Disconnect</button><p class="auth-status" role="status">Not connected. Public viewing is available.</p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a restricted token</a> · <a href="https://github.com/sgkjeajk/digital-tools/actions/workflows/stock-monitor.yml" target="_blank" rel="noopener noreferrer">Check price updater</a></details>';
   const input=container.querySelector('input'),status=container.querySelector('.auth-status'),button=container.querySelector('.connect');
   button.onclick=async()=>{const value=input.value.trim();input.value='';if(!value){status.textContent='Enter your restricted GitHub token.';return;}credential=value;button.disabled=true;try{await request('');status.textContent='Connected for this tab. Save writes the shared GitHub ticker configuration.';}catch(e){credential='';status.textContent=e.message;}finally{button.disabled=false;}};
   container.querySelector('.disconnect').onclick=()=>{credential='';input.value='';status.textContent='Disconnected. The token has been cleared from this tab.';};
