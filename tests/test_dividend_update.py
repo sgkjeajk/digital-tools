@@ -12,7 +12,7 @@ import dividend_update as dividend
 class DividendTests(unittest.TestCase):
     def test_chart_dividend_and_yield(self):
         stamp = int(dividend.dt.datetime.now(dividend.dt.timezone.utc).timestamp()) - 86400
-        chart = json.dumps({'chart': {'result': [{'events': {'dividends': {'one': {'date': stamp, 'amount': 2}}}}]}})
+        chart = json.dumps({'chart': {'result': [{'meta': {'symbol': 'TEST'}, 'events': {'dividends': {'one': {'date': stamp, 'amount': 2}}}}]}})
         def fetch(url):
             if '/chart/' in url:
                 return chart
@@ -21,7 +21,7 @@ class DividendTests(unittest.TestCase):
             result = dividend.get_one('TEST', 100)
         self.assertEqual(result['dividend_per_share'], 2)
         self.assertEqual(result['dividend_yield_pct'], 2)
-        self.assertIsNone(result['dividend_payment_date'])
+        self.assertIsNone(result.get('dividend_payment_date'))
         self.assertIsNone(result['dividend_error'])
 
     def test_failure_retains_prior_values_and_does_not_change_prices(self):

@@ -1,0 +1,35 @@
+name: Index display defaults tests
+on:
+  push:
+    paths:
+      - market-watch-admin.html
+      - stock-monitor/github-client.js
+      - stock-monitor/admin-page-passwords.js
+      - stock-monitor/admin-display-defaults.js
+      - tests/test_admin_page_passwords.cjs
+      - tests/test_admin_display_defaults.cjs
+      - stock-monitor/index.html
+      - stock-monitor/tools/kwc.html
+      - stock-monitor/tools/syc.html
+      - stock-monitor/tools/klz.html
+      - stock-monitor/tools/monitor-page-defaults.js
+      - stock-monitor/monitor-index-defaults.js
+      - stock-monitor/display-defaults.js
+      - stock-monitor/display-defaults.css
+      - data/stock-monitor-display-defaults.json
+      - tests/test_index_display_defaults.cjs
+      - tests/test_index_display_integration.cjs
+      - .github/workflows/index-display-defaults-tests.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/test_index_display_defaults.cjs tests/test_index_display_integration.cjs tests/test_admin_page_passwords.cjs tests/test_admin_display_defaults.cjs
+

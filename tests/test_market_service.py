@@ -97,18 +97,25 @@ class ValidateConfigTests(unittest.TestCase):
         self.assertEqual(result["priceChecker"]["cycles"], 12)
         self.assertFalse(result["priceChecker"]["categories"]["Fund"])
 
-    def test_rejects_more_than_200_tickers(self):
-        with self.assertRaisesRegex(ValueError, "Expected at most 200 tickers"):
-            market_service.validate(
-                {
-                    "version": 1,
-                    "tickers": [{"ticker": f"AAPL{i}", "enabled": True} for i in range(201)],
-                }
-            )
-
+    def test_accepts_more_than_400_tickers_and_unbounded_checker_settings(self):
+        entries = [
+            {
+                "ticker": f"TEST{i:03d}",
+                "enabled": True,
+                "name": f"Test Instrument {i}",
+                "region": "Test Market",
+                "type": "Stock",
+                "metadata_source": "Test fixture",
+            }
+            for i in range(401)
+        ]
+        result = market_service.validate({"version": 1, "instruments": entries, "priceChecker": {"cycles": 31, "maxActiveCheckers": 11}})
+        self.assertEqual(len(result["instruments"]), 401)
+        self.assertEqual(result["priceChecker"]["cycles"], 31)
+        self.assertEqual(result["priceChecker"]["maxActiveCheckers"], 11)
 
 class QuoteChartTests(unittest.TestCase):
-    def test_uses_chart_previous_close_for_mutual_funds(self):
+    def test_rejects_chart_baseline_without_verified_daily_close(self):
         original_fetch = market_service.fetch
         original_now = market_service.dt.datetime
 
@@ -138,15 +145,12 @@ class QuoteChartTests(unittest.TestCase):
 
             market_service.fetch = fake_fetch
             market_service.dt.datetime = FixedDateTime
-            result = market_service.quote_chart("0P0000Z32L.SI")
+            with self.assertRaisesRegex(ValueError, "Previous session close unavailable"):
+                market_service.quote_chart("0P0000Z32L.SI")
         finally:
             market_service.fetch = original_fetch
             market_service.dt.datetime = original_now
 
-        self.assertEqual(result["current_price"], 7.5065)
-        self.assertEqual(result["prev_close"], 7.5107)
-        self.assertAlmostEqual(result["current_pct_change"], -0.05592022048543921)
-        self.assertEqual(result["currency"], "SGD")
 
 
 if __name__ == "__main__":

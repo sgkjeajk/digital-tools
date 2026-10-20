@@ -1,14 +1,14 @@
 # sgkjeajk Stock and ETF Monitor test guide
 
-Monitor: https://sgkjeajk.github.io/digital-tools/stock-monitor/
+Monitor: https://myai118.github.io/digital-tools/stock-monitor/
 
-Admin: https://sgkjeajk.github.io/digital-tools/market-watch-admin.html
+Admin: https://myai118.github.io/digital-tools/market-watch-admin.html
 
-Digital Tools: https://sgkjeajk.github.io/digital-tools/
+Digital Tools: https://myai118.github.io/digital-tools/
 
 ## Owner access
 
-Open **Owner access — connect GitHub** in Admin. Create a fine-grained token restricted to **sgkjeajk/digital-tools**, with **Contents: read and write** and **Actions: read and write**, and enter it into the password field on the page. Do not send it in chat. The token stays only in that tab's memory and is cleared on Disconnect or reload. It is never embedded in the repository or put into browser storage. The connected Codex GitHub app cannot sign the website in on your behalf.
+Open **Owner access — connect GitHub** in Admin. Create a fine-grained token restricted to **myai118/digital-tools**, with **Contents: read and write** and **Actions: read and write**, and enter it into the password field on the page. Do not send it in chat. The token stays only in that tab's memory and is cleared on Disconnect or reload. It is never embedded in the repository or put into browser storage. The connected Codex GitHub app cannot sign the website in on your behalf.
 
 The public Monitor can be viewed without signing in. Its Refresh Current Price button reloads the latest shared snapshot for unsigned viewers and explicitly says so. A signed-in owner can use that button to request new prices through GitHub Actions. Alternatively, remain signed into Admin and click **Retrieve New Prices**, then refresh the Monitor tab.
 
@@ -16,7 +16,7 @@ The public Monitor can be viewed without signing in. Its Refresh Current Price b
 
 1. Confirm 13 initial enabled tickers, including **ES3.SI — State Street SPDR Straits Times Index ETF**, priced in **SGD**. The other initially tracked instruments use USD. Compare market time with retrieval time; prices may be delayed or from a closed market.
 2. In Admin, enter **VTI**, click Add Ticker, then Save Changes. Name, market and ETF classification are automatic. Save commits `data/stock-tickers.json`; no manual Export/Import is needed. Refresh Monitor: VTI should appear, initially with prices pending if the updater is still running.
-3. Wait for the [price updater](https://github.com/sgkjeajk/digital-tools/actions/workflows/stock-monitor.yml), then refresh Monitor again to view the new prices. GitHub Actions queueing can take several minutes; a queued request does not imply new prices have already arrived.
+3. Wait for the [price updater](https://github.com/myai118/digital-tools/actions/workflows/stock-monitor.yml), then refresh Monitor again to view the new prices. GitHub Actions queueing can take several minutes; a queued request does not imply new prices have already arrived.
 4. Disable VTI and Save; refresh Monitor and verify it is hidden. Enable and Save; verify it returns.
 5. Edit VTI to D05.SI and Save. Verify Singapore/Stock metadata and that the Monitor replaces VTI with D05.SI. After the updater finishes, its prices should be SGD.
 6. Delete D05.SI and Save. Refresh Monitor and verify removal.

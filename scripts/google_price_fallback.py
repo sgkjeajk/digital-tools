@@ -13,7 +13,12 @@ except ImportError:
 
 EXCHANGES={'SPY':'NYSEARCA','VOO':'NYSEARCA','VTI':'NYSEARCA','VUG':'NYSEARCA','SHEL':'NYSE'}
 def google_symbol(ticker):
+    if ticker.endswith('.MU'):
+        return ticker[:-3]+':MUN'
     return ticker[:-3]+':SGX' if ticker.endswith('.SI') else ticker+':'+EXCHANGES.get(ticker,'NASDAQ')
+
+def quote_currency(ticker):
+    return 'EUR' if ticker.endswith('.MU') else 'SGD' if ticker.endswith('.SI') else 'USD'
 
 def fetch(url):
     request=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept-Language':'en-US,en;q=0.9'})
@@ -53,7 +58,7 @@ def parse_static_quote(body,ticker):
         raise ValueError('Exact exchange-qualified ticker data not found')
     price=float(match.group('price'));prev=float(match.group('prev'))
     currency=match.group('currency')
-    expected='SGD' if ticker.endswith('.SI') else 'USD'
+    expected=quote_currency(ticker)
     if currency!=expected:
         raise ValueError('Primary quote currency mismatch')
     if not 0<price<1e7 or not 0<prev<1e7:
@@ -75,7 +80,7 @@ def parse_quote(body,ticker):
     price=float(re.sub(r'[^\d.]','',match.group(2)))
     if not 0<price<1e7: raise ValueError('Invalid primary price')
     near=body[match.end():match.end()+350]
-    currency='SGD' if ticker.endswith('.SI') else 'USD'
+    currency=quote_currency(ticker)
     if not re.search(r'\b'+currency+r'\b',near):raise ValueError('Primary quote currency mismatch')
     # Quote timestamp must come from the same primary price block, never after-hours.
     stamp=re.search(r'\b([A-Z][a-z]{2}\s+\d{1,2},?\s+\d{4},?\s+\d{1,2}:\d{2}(?::\d{2})?\s*[AP]M\s*UTC[+-]\d{1,2}(?::\d{2})?)\b',near)
