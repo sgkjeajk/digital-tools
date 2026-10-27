@@ -144,4 +144,4 @@ $('hideAllStockButton').onclick=()=>setTypeVisible('Stock',false);
 if($('hideAllFundButton'))$('hideAllFundButton').onclick=()=>setTypeVisible('Fund',false);
 
 
-const returnPreviousPageButton=$('returnPreviousPageButton'); if(returnPreviousPageButton)returnPreviousPageButton.onclick=()=>{location.href='https://sgkjeajk.github.io/digital-tools/myweb/kwc.html';};
+const returnPreviousPageButton=$('returnPreviousPageButton'); if(returnPreviousPageButton)returnPreviousPageButton.onclick=()=>{location.href='https://myai118.github.io/digital-tools/myweb/kwc.html';};

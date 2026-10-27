@@ -6,7 +6,7 @@ function harness(page='index.html',pages={'index.html':{visibleTickers:[]}},opti
  const make=()=>({children:[],disabled:false,value:'',textContent:'',append(...items){this.children.push(...items);},querySelector(selector){return this.controls?.[selector]||make();},set innerHTML(value){this.controls={'input':nodes.input=make(),'[data-action="connect"]':nodes.connect=make(),'[data-action="disconnect"]':nodes.disconnect=make(),'[data-action="save"]':nodes.save=make()};}});
  const panel=make(),actions=make(),status=make();panel.querySelector=()=>actions;
  const ctx={URL,Set,Map,Date,JSON,TextDecoder,TextEncoder,Uint8Array,atob,btoa,console,
-  document:{currentScript:{src:'https://sgkjeajk.github.io/digital-tools/stock-monitor/display-defaults.js'},createElement:make,getElementById(id){return id==='settingsPanel'?panel:id==='ownerDefaultsStatus'?status:null;}},
+  document:{currentScript:{src:'https://myai118.github.io/digital-tools/stock-monitor/display-defaults.js'},createElement:make,getElementById(id){return id==='settingsPanel'?panel:id==='ownerDefaultsStatus'?status:null;}},
   location:{pathname:'/digital-tools/stock-monitor/'+page},localStorage:{getItem(){throw Error('Visitor storage must not be used');}},
   window:{addEventListener(name,handler){events[name]=handler;}},
   async fetch(url,opts={}){const target=String(url);calls.push({url:target,opts});

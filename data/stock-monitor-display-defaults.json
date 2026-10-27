@@ -28,6 +28,8 @@
     "tools/kwc.html": {
       "visibleTickers": [
         "0P00009VED.SI",
+        "0P0000IYVB.SI",
+        "0P0000IYVJ.SI",
         "0P0000TZQ7.SI",
         "0P0000Y077.SI",
         "0P0000Z32L.SI",
@@ -56,7 +58,7 @@
         "Z74.SI"
       ],
       "settingsPassword": "kwc",
-      "savedAt": "2026-10-20T07:25:26.042Z"
+      "savedAt": "2026-10-22T08:54:30.561Z"
     },
     "tools/syc.html": {
       "visibleTickers": [],
