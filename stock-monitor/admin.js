@@ -36,7 +36,7 @@ const showValue=r=>r.type==='Fund'?r.show!==false:true;
 function tell(text,kind=''){ $('message').textContent=text;$('message').className=kind; }
 function tellNode(node,kind=''){ $('message').replaceChildren(node);$('message').className=kind; }
 function lock(value){busy=value;for(const id of ['addButton','ticker','addEnabled','importButton','exportButton','viewExcelButton','exportExcelButton','importFile','saveEdit','editTicker','editEnabled','editShow','cancelEdit','saveMain','cancelMain','refreshInterval','checkerEnabled','checkerInterval','checkerCycles','checkerMaxActive','checkerETF','checkerStock','checkerFund'])if($(id))$(id).disabled=value;render();}
-async function api(path){if(path==='/api/config')return (await ECGitHub.file('data/stock-tickers.json')).data;if(path.startsWith('/api/lookup'))return ECGitHub.lookup(new URLSearchParams(path.split('?')[1]).get('ticker'));throw Error('Unknown operation.');}
+async function api(path,onProgress){if(path==='/api/config')return (await ECGitHub.file('data/stock-tickers.json')).data;if(path.startsWith('/api/lookup'))return ECGitHub.lookup(new URLSearchParams(path.split('?')[1]).get('ticker'),onProgress);throw Error('Unknown operation.');}
 async function persist(){return ECGitHub.save({...backup(),revision},items);}
 function commit(next){items=sort(next);render();}
 function normaliseCheckerSettings(raw={}){
@@ -110,7 +110,7 @@ async function viewExcel(){
  preview.innerHTML=excelRows();
  $('excelDialog').showModal();
 }
-async function lookup(ticker){const x=await api('/api/lookup?ticker='+encodeURIComponent(ticker));return {name:x.name,market:x.region,type:x.type,source:x.metadata_source};}
+async function lookup(ticker,onProgress){const x=await api('/api/lookup?ticker='+encodeURIComponent(ticker),onProgress);return {name:x.name,market:x.region,type:x.type,source:x.source};}
 function cell(text){const td=document.createElement('td');td.textContent=text;return td;}
 function action(text,fn,cls=''){const b=document.createElement('button');b.type='button';b.textContent=text;b.className=cls;b.disabled=busy;b.addEventListener('click',fn);return b;}
 function render(){
@@ -132,7 +132,7 @@ $('addForm').onsubmit=async e=>{
  lock(true);tell('Looking up '+ticker+' in STKREF…');
  try{
   let meta;
-  try{meta=await lookup(ticker);}
+  try{meta=await lookup(ticker,progressText=>tell(progressText));}
   catch(lookupError){
    $('manualTicker').value=ticker;$('manualEnabled').checked=$('addEnabled').checked;
    $('manualLookupIssue').textContent='Automatic lookup was unavailable ('+lookupError.message+'). Confirm the ticker and enter its correct name, market and type before adding it.';
