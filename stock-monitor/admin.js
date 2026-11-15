@@ -124,7 +124,40 @@ for(const th of document.querySelectorAll('th[data-sort-key]')){
 }
 function confirmAction(title,text,label){return new Promise(resolve=>{const d=$('confirmDialog');$('confirmTitle').textContent=title;$('confirmText').textContent=text;$('confirmYes').textContent=label;let completed=false;function finish(answer){if(completed)return;completed=true;d.close();d.oncancel=null;$('confirmYes').onclick=null;$('confirmCancel').onclick=null;resolve(answer);}$('confirmYes').onclick=()=>finish(true);$('confirmCancel').onclick=()=>finish(false);d.oncancel=e=>{e.preventDefault();finish(false);};d.showModal();$('confirmCancel').focus();});}
 async function remove(r){if(busy)return;if(await confirmAction('Delete '+r.ticker+'?','This removes '+r.ticker+' after Save Changes. Optional Export keeps a backup.','Delete Ticker')){commit(items.filter(x=>x.ticker!==r.ticker));tell(r.ticker+' deleted.');}}
-$('addForm').onsubmit=async e=>{e.preventDefault();if(busy)return;try{const ticker=normalize($('ticker').value);if(items.some(x=>x.ticker===ticker))throw Error(ticker+' is already in the list.');lock(true);tell('Looking up '+ticker+'…');const meta=await lookup(ticker);commit([...items,{ticker,enabled:$('addEnabled').checked,...meta}]);$('ticker').value='';tell(ticker+' added to your draft. Click Save Changes to save it to the shared Monitor list.');}catch(e){tell(e.message,'error');}finally{lock(false);$('ticker').focus();}};
+$('addForm').onsubmit=async e=>{
+ e.preventDefault();if(busy)return;
+ let ticker;
+ try{ticker=normalize($('ticker').value);if(items.some(x=>x.ticker===ticker))throw Error(ticker+' is already in the list.');}
+ catch(error){tell(error.message,'error');return;}
+ lock(true);tell('Looking up '+ticker+' in STKREF…');
+ try{
+  let meta;
+  try{meta=await lookup(ticker);}
+  catch(lookupError){
+   $('manualTicker').value=ticker;$('manualEnabled').checked=$('addEnabled').checked;
+   $('manualLookupIssue').textContent='Automatic lookup was unavailable ('+lookupError.message+'). Confirm the ticker and enter its correct name, market and type before adding it.';
+   $('manualName').value='';$('manualMarket').value='';$('manualType').value='Stock';
+   $('manualTickerDialog').showModal();$('manualName').focus();
+   tell('Automatic lookup unavailable. Enter the verified details in the form to continue.','warn');
+   return;
+  }
+  commit([...items,{ticker,enabled:$('addEnabled').checked,...meta}]);$('ticker').value='';
+  tell(ticker+' added to your draft. Click Save Changes to write it to sgkjeajk/stkref → data/stock-tickers.json.');
+ }catch(error){tell(error.message,'error');}
+ finally{lock(false);$('ticker').focus();}
+};
+$('manualTickerCancel').onclick=()=>$('manualTickerDialog').close();
+$('manualTickerDialog').oncancel=e=>{if(busy)e.preventDefault();};
+$('manualTickerForm').onsubmit=e=>{
+ e.preventDefault();
+ const ticker=$('manualTicker').value,name=$('manualName').value.trim(),market=$('manualMarket').value.trim(),type=$('manualType').value;
+ if(!name||!market){$('manualLookupIssue').textContent='Enter both the instrument name and market/exchange.';return;}
+ if(items.some(x=>x.ticker===ticker)){$('manualLookupIssue').textContent=ticker+' is already in the list.';return;}
+ const meta={name,market,type,source:'Admin-entered metadata'};
+ commit([...items,{ticker,enabled:$('manualEnabled').checked,...meta}]);
+ $('manualTickerDialog').close();$('ticker').value='';
+ tell(ticker+' added to your draft. Click Save Changes to write it to sgkjeajk/stkref → data/stock-tickers.json.');
+};
 function openEdit(r){editing=r.ticker;$('editTicker').value=r.ticker;$('editEnabled').checked=r.enabled;$('editShow').checked=showValue(r);$('editShow').disabled=r.type!=='Fund';$('editError').textContent='';$('editDialog').showModal();$('editTicker').focus();}
 $('cancelEdit').onclick=()=>$('editDialog').close();$('editDialog').oncancel=e=>{if(busy)e.preventDefault();};
 $('editForm').onsubmit=async e=>{e.preventDefault();if(busy)return;try{const ticker=normalize($('editTicker').value);if(items.some(x=>x.ticker===ticker&&x.ticker!==editing))throw Error(ticker+' is already in the list.');const current=items.find(x=>x.ticker===editing);lock(true);$('editError').textContent='Checking ticker…';const meta=ticker===editing&&current.type?current:await lookup(ticker);commit(items.map(x=>x.ticker===editing?{...meta,ticker,enabled:$('editEnabled').checked,show:meta.type==='Fund'?$('editShow').checked:true}:x));$('editDialog').close();tell(ticker+' updated in your draft. Click Save Changes to save it to the shared Monitor list.');}catch(e){$('editError').textContent=e.message;}finally{lock(false);}};
