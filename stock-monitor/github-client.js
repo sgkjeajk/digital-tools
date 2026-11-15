@@ -20,7 +20,39 @@ window.ECGitHub=(()=>{
  function normalise(t){if(typeof t!=='string')throw Error('Ticker must be text.');t=t.trim().toUpperCase();if(!/^[A-Z0-9][A-Z0-9.\-]{0,31}$/.test(t)||/[.\-]{2}/.test(t)||/[.\-]$/.test(t))throw Error('Invalid ticker format.');return t;}
  const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms)),id=()=>crypto.randomUUID();
  async function dispatch(repo,workflow,inputs={}){if(!tokenFor(repo))throw Error('Connect the GitHub token for '+repo+' first. Actions: read and write is required.');return request(repo,'/actions/workflows/'+workflow+'/dispatches',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:branch,inputs})});}
- async function lookup(t){t=normalise(t);const prefix=t[0];if(!catalogs.has(prefix))catalogs.set(prefix,raw('data/symbol-directory/'+prefix+'.json').catch(e=>{catalogs.delete(prefix);if(e.message.startsWith('GitHub 404:'))return {};throw e;}));const catalog=await catalogs.get(prefix);if(Object.hasOwn(catalog,t)){const x=catalog[t];return {ticker:t,name:x.name,region:x.market,type:x.type,metadata_source:x.source};}throw Error('This ticker is not in STKREF’s verified symbol directory. Enter its name, market/exchange and type manually after checking them.');}
+ async function yahooChartLookup(t){
+  let lastError='No exact-symbol chart metadata was returned.';
+  for(const host of ['query1.finance.yahoo.com','query2.finance.yahoo.com']){
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+   try{
+    const url='https://'+host+'/v8/finance/chart/'+encodeURIComponent(t)+'?range=1d&interval=1d';
+    const response=await fetch(url,{method:'GET',cache:'no-store',signal:controller.signal});
+    if(!response.ok)throw Error('Yahoo Finance returned HTTP '+response.status+'.');
+    const payload=await response.json(),chart=payload?.chart;
+    if(chart?.error)throw Error(chart.error.description||'Yahoo Finance could not find this ticker.');
+    const meta=chart?.result?.[0]?.meta;
+    if(!meta)throw Error('Yahoo Finance returned no chart metadata.');
+    const found=normalise(meta.symbol||'');
+    if(found!==t)throw Error('Yahoo Finance matched '+(meta.symbol||'another symbol')+', not the exact ticker entered.');
+    const name=meta.longName||meta.shortName;
+    const market=meta.fullExchangeName||meta.exchangeName||meta.exchange;
+    const kinds={EQUITY:'Stock',ETF:'ETF',MUTUALFUND:'Fund',FUND:'Fund'};
+    const type=kinds[String(meta.instrumentType||'').toUpperCase()];
+    if(!name||!market||!type)throw Error('Yahoo Finance did not return a complete name, market and supported instrument type.');
+    return {ticker:t,name,region:market,type,source:'Yahoo Finance exact-symbol chart metadata · '+new Date().toISOString().slice(0,10)};
+   }catch(error){lastError=error?.name==='AbortError'?'Yahoo Finance lookup timed out.':(error?.message||'Yahoo Finance lookup failed.');}
+   finally{clearTimeout(timer);}
+  }
+  throw Error(lastError);
+ }
+ async function lookup(t){
+  t=normalise(t);
+  const prefix=t[0];
+  if(!catalogs.has(prefix))catalogs.set(prefix,raw('data/symbol-directory/'+prefix+'.json').catch(e=>{catalogs.delete(prefix);if(e.message.startsWith('GitHub 404:'))return {};throw e;}));
+  const catalog=await catalogs.get(prefix);
+  if(Object.hasOwn(catalog,t)){const x=catalog[t];return {ticker:t,name:x.name,region:x.market,type:x.type,source:x.source};}
+  return yahooChartLookup(t);
+ }
  async function save(input,items){
   if(!credentials.stkref)throw Error('Connect a GitHub token restricted to sgkjeajk/stkref. Nothing was saved.');
   const seen=new Set();
