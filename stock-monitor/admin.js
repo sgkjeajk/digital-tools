@@ -110,7 +110,7 @@ async function viewExcel(){
  preview.innerHTML=excelRows();
  $('excelDialog').showModal();
 }
-async function lookup(ticker,onProgress){const x=await api('/api/lookup?ticker='+encodeURIComponent(ticker),onProgress);return {name:x.name,market:x.region,type:x.type,source:x.source};}
+async function lookup(ticker,onProgress){const x=await api('/api/lookup?ticker='+encodeURIComponent(ticker),onProgress);return {ticker:x.ticker||ticker,name:x.name,market:x.region,type:x.type,source:x.source};}
 function cell(text){const td=document.createElement('td');td.textContent=text;return td;}
 function action(text,fn,cls=''){const b=document.createElement('button');b.type='button';b.textContent=text;b.className=cls;b.disabled=busy;b.addEventListener('click',fn);return b;}
 function render(){
@@ -141,6 +141,9 @@ $('addForm').onsubmit=async e=>{
    tell('Automatic lookup unavailable. Enter the verified details in the form to continue.','warn');
    return;
   }
+  ticker=meta.ticker||ticker;
+  $('ticker').value=ticker;
+  if(items.some(x=>x.ticker===ticker)){tell(ticker+' is already in the list.','error');return;}
   commit([...items,{ticker,enabled:$('addEnabled').checked,...meta}]);$('ticker').value='';
   tell(ticker+' added to your draft. Click Save Changes to write it to sgkjeajk/stkref → data/stock-tickers.json.');
  }catch(error){tell(error.message,'error');}
