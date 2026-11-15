@@ -20,38 +20,32 @@ window.ECGitHub=(()=>{
  function normalise(t){if(typeof t!=='string')throw Error('Ticker must be text.');t=t.trim().toUpperCase();if(!/^[A-Z0-9][A-Z0-9.\-]{0,31}$/.test(t)||/[.\-]{2}/.test(t)||/[.\-]$/.test(t))throw Error('Invalid ticker format.');return t;}
  const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms)),id=()=>crypto.randomUUID();
  async function dispatch(repo,workflow,inputs={}){if(!tokenFor(repo))throw Error('Connect the GitHub token for '+repo+' first. Actions: read and write is required.');return request(repo,'/actions/workflows/'+workflow+'/dispatches',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ref:branch,inputs})});}
- async function yahooChartLookup(t){
-  let lastError='No exact-symbol chart metadata was returned.';
-  for(const host of ['query1.finance.yahoo.com','query2.finance.yahoo.com']){
-   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
-   try{
-    const url='https://'+host+'/v8/finance/chart/'+encodeURIComponent(t)+'?range=1d&interval=1d';
-    const response=await fetch(url,{method:'GET',cache:'no-store',signal:controller.signal});
-    if(!response.ok)throw Error('Yahoo Finance returned HTTP '+response.status+'.');
-    const payload=await response.json(),chart=payload?.chart;
-    if(chart?.error)throw Error(chart.error.description||'Yahoo Finance could not find this ticker.');
-    const meta=chart?.result?.[0]?.meta;
-    if(!meta)throw Error('Yahoo Finance returned no chart metadata.');
-    const found=normalise(meta.symbol||'');
-    if(found!==t)throw Error('Yahoo Finance matched '+(meta.symbol||'another symbol')+', not the exact ticker entered.');
-    const name=meta.longName||meta.shortName;
-    const market=meta.fullExchangeName||meta.exchangeName||meta.exchange;
-    const kinds={EQUITY:'Stock',ETF:'ETF',MUTUALFUND:'Fund',FUND:'Fund'};
-    const type=kinds[String(meta.instrumentType||'').toUpperCase()];
-    if(!name||!market||!type)throw Error('Yahoo Finance did not return a complete name, market and supported instrument type.');
-    return {ticker:t,name,region:market,type,source:'Yahoo Finance exact-symbol chart metadata · '+new Date().toISOString().slice(0,10)};
-   }catch(error){lastError=error?.name==='AbortError'?'Yahoo Finance lookup timed out.':(error?.message||'Yahoo Finance lookup failed.');}
-   finally{clearTimeout(timer);}
-  }
-  throw Error(lastError);
- }
- async function lookup(t){
+ async function lookup(t,progress=()=>{}){
   t=normalise(t);
   const prefix=t[0];
   if(!catalogs.has(prefix))catalogs.set(prefix,raw('data/symbol-directory/'+prefix+'.json').catch(e=>{catalogs.delete(prefix);if(e.message.startsWith('GitHub 404:'))return {};throw e;}));
   const catalog=await catalogs.get(prefix);
   if(Object.hasOwn(catalog,t)){const x=catalog[t];return {ticker:t,name:x.name,region:x.market,type:x.type,source:x.source};}
-  return yahooChartLookup(t);
+  if(!credentials.stkref)throw Error('Connect the GitHub token for sgkjeajk/stkref before looking up a new ticker.');
+  const requestId=id();
+  progress('Ticker is not in STKREF’s directory. Asking STKREF to retrieve its verified metadata…');
+  await dispatch(tickerRepo,'lookup-ticker.yml',{ticker:t,request_id:requestId});
+  progress('STKREF is checking Yahoo Finance for '+t+'… this may take up to a few minutes.');
+  for(let i=0;i<60;i++){
+   await delay(3000);
+   try{
+    const result=await raw('data/lookups/'+encodeURIComponent(t)+'.json');
+    if(result.request_id!==requestId)continue;
+    if(result.error)throw Error(result.error);
+    const item=result.instrument||{};
+    if(item.ticker!==t||!item.name||!item.region||!item.type||!item.metadata_source)throw Error('STKREF returned incomplete ticker metadata.');
+    return {ticker:t,name:item.name,region:item.region,type:item.type,source:item.metadata_source};
+   }catch(error){
+    if(error.message.startsWith('GitHub 404:'))continue;
+    throw error;
+   }
+  }
+  throw Error('STKREF has not returned the metadata lookup yet. Check the STKREF Actions page, then try again.');
  }
  async function save(input,items){
   if(!credentials.stkref)throw Error('Connect a GitHub token restricted to sgkjeajk/stkref. Nothing was saved.');
@@ -95,7 +89,7 @@ window.ECGitHub=(()=>{
   return {requestId,workflowUrl:'https://github.com/'+tickerRepo+'/actions/workflows/task.yml'};
  }
  function mount(container){
-  container.innerHTML='<details open><summary>STKREF access — connect GitHub</summary><p><b>This admin saves ticker configuration to <code>sgkjeajk/stkref</code> → <code>data/stock-tickers.json</code>.</b> Create a fine-grained token with Resource owner <b>sgkjeajk</b>, Repository access set to <b>Only select repositories</b> → <b>stkref</b>, and <b><b>Contents: read and write</b> to load/save tickers. <b>Actions: read and write</b> is also needed only if you use the price-checker controls. Unknown tickers can be added with manually verified metadata. The token stays in this tab’s memory until disconnected or reloaded. Never paste it into chat.</p><label>STKREF GitHub token <input type="password" data-token="stkref" autocomplete="off" spellcheck="false" aria-label="STKREF GitHub token"></label><button type="button" class="connect" data-repo="stkref">Connect STKREF</button> <button type="button" class="disconnect" data-repo="stkref">Disconnect STKREF</button><p class="auth-status" data-status="stkref" role="status">STKREF not connected. Public viewing is available.</p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a fine-grained token</a> · <a href="https://github.com/sgkjeajk/stkref" target="_blank" rel="noopener noreferrer">Open sgkjeajk/stkref</a> · <a href="https://github.com/sgkjeajk/stkref/actions/workflows/task.yml" target="_blank" rel="noopener noreferrer">STKREF price checker</a></details><details><summary>Optional Monitor page settings access</summary><p>The password and default-ticker settings below still save to <b>myai118/digital-tools</b>. Connect a separate token for that repository only if you use those settings. It is not needed to add tickers to STKREF.</p><label>Digital Tools GitHub token <input type="password" data-token="digitalTools" autocomplete="off" spellcheck="false" aria-label="Digital Tools GitHub token"></label><button type="button" class="connect" data-repo="digitalTools">Connect Digital Tools</button> <button type="button" class="disconnect" data-repo="digitalTools">Disconnect Digital Tools</button><p class="auth-status" data-status="digitalTools" role="status">Digital Tools settings not connected.</p><a href="https://github.com/myai118/digital-tools" target="_blank" rel="noopener noreferrer">Open myai118/digital-tools</a></details>';
+  container.innerHTML='<details open><summary>STKREF access — connect GitHub</summary><p><b>This admin saves ticker configuration to <code>sgkjeajk/stkref</code> → <code>data/stock-tickers.json</code>.</b> Create a fine-grained token with Resource owner <b>sgkjeajk</b>, Repository access set to <b>Only select repositories</b> → <b>stkref</b>, and <b><b>Contents: read and write</b> to load/save tickers. <b>Actions: read and write</b> is needed to look up new tickers and to use the price-checker controls. New tickers are looked up by a STKREF GitHub Action; the verified name, market and category fill automatically. If lookup fails, the admin explains why and offers manual entry. The token stays in this tab’s memory until disconnected or reloaded. Never paste it into chat.</p><label>STKREF GitHub token <input type="password" data-token="stkref" autocomplete="off" spellcheck="false" aria-label="STKREF GitHub token"></label><button type="button" class="connect" data-repo="stkref">Connect STKREF</button> <button type="button" class="disconnect" data-repo="stkref">Disconnect STKREF</button><p class="auth-status" data-status="stkref" role="status">STKREF not connected. Public viewing is available.</p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a fine-grained token</a> · <a href="https://github.com/sgkjeajk/stkref" target="_blank" rel="noopener noreferrer">Open sgkjeajk/stkref</a> · <a href="https://github.com/sgkjeajk/stkref/actions/workflows/task.yml" target="_blank" rel="noopener noreferrer">STKREF price checker</a></details><details><summary>Optional Monitor page settings access</summary><p>The password and default-ticker settings below still save to <b>myai118/digital-tools</b>. Connect a separate token for that repository only if you use those settings. It is not needed to add tickers to STKREF.</p><label>Digital Tools GitHub token <input type="password" data-token="digitalTools" autocomplete="off" spellcheck="false" aria-label="Digital Tools GitHub token"></label><button type="button" class="connect" data-repo="digitalTools">Connect Digital Tools</button> <button type="button" class="disconnect" data-repo="digitalTools">Disconnect Digital Tools</button><p class="auth-status" data-status="digitalTools" role="status">Digital Tools settings not connected.</p><a href="https://github.com/myai118/digital-tools" target="_blank" rel="noopener noreferrer">Open myai118/digital-tools</a></details>';
   for(const repo of ['stkref','digitalTools']){
    const input=container.querySelector('[data-token="'+repo+'"]'),status=container.querySelector('[data-status="'+repo+'"]'),button=container.querySelector('.connect[data-repo="'+repo+'"]');
    const owner=repo==='stkref'?tickerRepo:settingsRepo;
