@@ -90,11 +90,11 @@ window.ECGitHub=(()=>{
  async function savePagePassword(page,password,previousPassword){
   if(!credentials.digitalTools)throw Error('Connect the optional myai118/digital-tools token before saving a monitor password.');
   if(typeof password!=='string'||!password.trim())throw Error('Enter a new password.');
-  const path='data/stock-monitor-display-defaults.json',latest=await file(path),data=latest.data;
+  const path='data/stock-monitor-display-defaults.json',latest=await file(path,settingsRepo),data=latest.data;
   if(data.version!==1||!data.pages||!Object.hasOwn(data.pages,page)||!Array.isArray(data.pages[page]?.visibleTickers))throw Error('This monitor page is not configured. Reload the password settings.');
   if(data.pages[page].settingsPassword!==previousPassword)throw Error('This password changed elsewhere. Reload password settings before saving.');
   data.pages[page]={...data.pages[page],settingsPassword:password};
-  const result=await request('/contents/'+path,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Update monitor settings password for '+page,branch,sha:latest.sha,content:encode(JSON.stringify(data,null,2)+'\n')})});
+  const result=await request(settingsRepo,'/contents/'+path,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Update monitor settings password for '+page,branch,sha:latest.sha,content:encode(JSON.stringify(data,null,2)+'\n')})});
   if(!result?.commit?.sha)throw Error('GitHub did not confirm the password save. Reload password settings to check before retrying.');
   return {data,commit_sha:result.commit.sha};
  }
