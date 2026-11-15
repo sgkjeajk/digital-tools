@@ -38,8 +38,8 @@ window.ECGitHub=(()=>{
     if(result.request_id!==requestId)continue;
     if(result.error)throw Error(result.error);
     const item=result.instrument||{};
-    if(item.ticker!==t||!item.name||!item.region||!item.type||!item.metadata_source)throw Error('STKREF returned incomplete ticker metadata.');
-    return {ticker:t,name:item.name,region:item.region,type:item.type,source:item.metadata_source};
+    if(!item.ticker||!item.name||!item.region||!item.type||!item.metadata_source)throw Error('STKREF returned incomplete ticker metadata.');
+    return {ticker:normalise(item.ticker),name:item.name,region:item.region,type:item.type,source:item.metadata_source};
    }catch(error){
     if(error.message.startsWith('GitHub 404:'))continue;
     throw error;
