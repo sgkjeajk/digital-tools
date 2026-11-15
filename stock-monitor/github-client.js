@@ -15,7 +15,7 @@ window.ECGitHub=(()=>{
  }
  const decode=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0)));
  const encode=s=>{let binary='';for(const byte of new TextEncoder().encode(s))binary+=String.fromCharCode(byte);return btoa(binary);};
- async function file(path,repo=tickerRepo){const raw=await request(repo,'/contents/'+path+'?ref='+branch+'&ts='+Date.now());return {data:JSON.parse(decode(raw.content)),sha:raw.sha};}
+ async function file(path,repo){repo=repo||(path==='data/stock-monitor-display-defaults.json'?settingsRepo:tickerRepo);const raw=await request(repo,'/contents/'+path+'?ref='+branch+'&ts='+Date.now());return {data:JSON.parse(decode(raw.content)),sha:raw.sha};}
  async function raw(path,repo=tickerRepo){return request(repo,'/contents/'+path+'?ref='+branch+'&ts='+Date.now(),{headers:{Accept:'application/vnd.github.raw+json'}});}
  function normalise(t){if(typeof t!=='string')throw Error('Ticker must be text.');t=t.trim().toUpperCase();if(!/^[A-Z0-9][A-Z0-9.\-]{0,31}$/.test(t)||/[.\-]{2}/.test(t)||/[.\-]$/.test(t))throw Error('Invalid ticker format.');return t;}
  const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms)),id=()=>crypto.randomUUID();
